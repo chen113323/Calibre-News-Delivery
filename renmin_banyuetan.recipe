@@ -9,7 +9,7 @@ from calibre.web.feeds.news import BasicNewsRecipe
 
 class RenminBanyuetan(BasicNewsRecipe):
     title = u'人民日报与半月谈'
-    description = u'人民日报电子版与半月谈（今日谈/时政讲解）每日全文合集'
+    description = u'人民日报电子版与半月谈（今日谈/时政讲解/评论/基层治理/文化/教育）每日全文合集'
     __author__ = 'chen113323'
     language = 'zh_CN'
     encoding = 'utf-8'
@@ -31,32 +31,18 @@ class RenminBanyuetan(BasicNewsRecipe):
         (u'半月谈·教育', 'https://rsshub.ktachibana.party/banyuetan/jiaoyu'),
     ]
 
-    # 分区目录内容页：条目字号缩小 + 删除标题后的日期
-    # 经 postprocess_book（oeb/lxml 管线）处理全部页面，API 用法对齐 calibre internal_postprocess_book
+    # 分区目录内容页：标题字号降为接近正文（rescale 120→90）+ 删除标题后的日期
+    # 机制：flatcss 转换读取 data-calibre-rescale 计算最终 font-size（内联 font-size 会被其覆盖，勿用）
     def postprocess_book(self, oeb, opts, log):
-        try:
-            for item in oeb.spine:
-                root = item.data
-                if root is None:
-                    continue
-                for li in root.xpath('//*[local-name()="li" and starts-with(@id,"article_")]'):
-                    li.set('style', 'font-size:0.8em;margin:0.2em 0;line-height:1.25;')
-                    for sp in li.xpath('.//*[local-name()="span" and contains(@class,"article_date")]'):
-                        sp.getparent().remove(sp)
-                lis = root.xpath('//*[local-name()="li" and starts-with(@id,"article_")]')
-                if lis:
-                    heads = root.xpath('//*[local-name()="head"]')
-                    if heads:
-                        st = heads[0].makeelement('{http://www.w3.org/1999/xhtml}style', {})
-                        st.text = 'li[id^="article_"]{font-size:0.8em !important;margin:0.2em 0;line-height:1.25;}'
-                        heads[0].append(st)
-                    for sp in li.xpath('.//*[local-name()="span" and contains(@class,"article_date")]'):
-                        sp.getparent().remove(sp)
-        except Exception as e:
-            try:
-                log.warn('compact index failed: %s' % e)
-            except Exception:
-                pass
+        for item in oeb.spine:
+            root = item.data
+            if root is None:
+                continue
+            for li in root.xpath('//*[local-name()="li" and starts-with(@id,"article_")]'):
+                for a in li.xpath('.//*[local-name()="a" and contains(@class,"article")]'):
+                    a.set('data-calibre-rescale', '90')
+                for sp in li.xpath('.//*[local-name()="span" and contains(@class,"article_date")]'):
+                    sp.getparent().remove(sp)
 
     # 索引页与 Kindle 目录只显示纯标题（点击标题跳转正文），不显示摘要小字
     def description_limiter(self, src):

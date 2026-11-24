@@ -31,20 +31,25 @@ class RenminBanyuetan(BasicNewsRecipe):
         (u'半月谈·教育', 'https://rsshub.ktachibana.party/banyuetan/jiaoyu'),
     ]
 
-    # 分区目录内容页：条目字号缩小 + 删除标题后的日期（正文页无此结构，不受影响）
-    def postprocess_html(self, soup, first_fetch):
+    # 分区目录内容页：条目字号缩小 + 删除标题后的日期
+    # 经 postprocess_book（oeb/lxml 管线）处理全部页面，API 用法对齐 calibre internal_postprocess_book
+    def postprocess_book(self, oeb, opts, log):
         try:
-            for li in soup.select('li[id^="article_"]'):
-                li['style'] = 'font-size:0.8em;margin:0.2em 0;line-height:1.25;'
-                a = li.find('a', class_='article')
-                if a is not None:
-                    a['style'] = 'font-size:1em;'
-                span = li.find('span', class_='article_date')
-                if span is not None:
-                    span.decompose()
-        except Exception:
-            pass
-        return soup
+            for item in oeb.spine:
+                root = item.data
+                if root is None:
+                    continue
+                for li in root.xpath('//*[local-name()="li" and starts-with(@id,"article_")]'):
+                    li.set('style', 'font-size:0.8em;margin:0.2em 0;line-height:1.25;')
+                    for a in li.xpath('.//*[local-name()="a" and contains(@class,"article")]'):
+                        a.set('style', 'font-size:1em;')
+                    for sp in li.xpath('.//*[local-name()="span" and contains(@class,"article_date")]'):
+                        sp.getparent().remove(sp)
+        except Exception as e:
+            try:
+                log.warn('compact index failed: %s' % e)
+            except Exception:
+                pass
 
     # 索引页与 Kindle 目录只显示纯标题（点击标题跳转正文），不显示摘要小字
     def description_limiter(self, src):

@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# 人民日报电子版 + 半月谈 · 全文 RSS 推送
+# 数据源：RSSHub（rsshub.ktachibana.party，实测全文输出路由）
+# 说明：use_embedded_content=True 直接使用 feed 内嵌全文，无需二次抓取原站
+
+from calibre.web.feeds.news import BasicNewsRecipe
+
+
+class RenminBanyuetan(BasicNewsRecipe):
+    title = u'人民日报与半月谈'
+    description = u'人民日报电子版与半月谈（今日谈/时政讲解）每日全文合集'
+    __author__ = 'chen113323'
+    language = 'zh_CN'
+    encoding = 'utf-8'
+
+    oldest_article = 2          # 回溯最近 2 天，避免漏文章
+    max_articles_per_feed = 40
+    use_embedded_content = True  # RSSHub 路由为全文输出型，直接复用内嵌正文
+    auto_cleanup = True          # 若个别条目无内嵌内容，回退到原站抓取并做正文提取
+    no_stylesheets = True
+    remove_javascript = True
+
+    feeds = [
+        (u'人民日报电子版', 'https://rsshub.ktachibana.party/people/paper'),
+        (u'半月谈·今日谈', 'https://rsshub.ktachibana.party/banyuetan/jinritan'),
+        (u'半月谈·时政讲解', 'https://rsshub.ktachibana.party/banyuetan/shizhengjiangjie'),
+    ]

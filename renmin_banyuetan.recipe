@@ -15,7 +15,7 @@ class RenminBanyuetan(BasicNewsRecipe):
     encoding = 'utf-8'
 
     oldest_article = 2          # 回溯最近 2 天，避免漏文章
-    max_articles_per_feed = 40
+    max_articles_per_feed = 150
     use_embedded_content = True  # RSSHub 路由为全文输出型，直接复用内嵌正文
     auto_cleanup = True          # 若个别条目无内嵌内容，回退到原站抓取并做正文提取
     no_stylesheets = True

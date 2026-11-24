@@ -25,6 +25,10 @@ class RenminBanyuetan(BasicNewsRecipe):
         (u'人民日报电子版', 'https://rsshub.ktachibana.party/people/paper'),
         (u'半月谈·今日谈', 'https://rsshub.ktachibana.party/banyuetan/jinritan'),
         (u'半月谈·时政讲解', 'https://rsshub.ktachibana.party/banyuetan/shizhengjiangjie'),
+        (u'半月谈·评论', 'https://rsshub.ktachibana.party/banyuetan/banyuetanpinglun'),
+        (u'半月谈·基层治理', 'https://rsshub.ktachibana.party/banyuetan/jicengzhili'),
+        (u'半月谈·文化', 'https://rsshub.ktachibana.party/banyuetan/wenhua'),
+        (u'半月谈·教育', 'https://rsshub.ktachibana.party/banyuetan/jiaoyu'),
     ]
 
     # 索引页与 Kindle 目录只显示纯标题（点击标题跳转正文），不显示摘要小字

@@ -31,6 +31,14 @@ class RenminBanyuetan(BasicNewsRecipe):
         (u'半月谈·教育', 'https://rsshub.ktachibana.party/banyuetan/jiaoyu'),
     ]
 
+    # 目录页条目缩小：只命中 li[id^=article_] 结构（正文页不含），一屏可显示更多条目
+    extra_css = '''
+li[id^="article_"] { font-size: 0.8em; margin: 0.2em 0; line-height: 1.25; }
+li[id^="article_"] a.article { font-size: 1em; }
+li[id^="article_"] .article_date { font-size: 0.85em; color: #777; }
+li[id^="article_"] .article_description { margin: 0; padding: 0; }
+'''
+
     # 索引页与 Kindle 目录只显示纯标题（点击标题跳转正文），不显示摘要小字
     def description_limiter(self, src):
         return u''

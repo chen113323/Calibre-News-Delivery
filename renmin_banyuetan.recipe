@@ -40,9 +40,16 @@ class RenminBanyuetan(BasicNewsRecipe):
                 if root is None:
                     continue
                 for li in root.xpath('//*[local-name()="li" and starts-with(@id,"article_")]'):
-                    li.set('style', 'margin:0.2em 0;line-height:1.25;')
-                    for a in li.xpath('.//*[local-name()="a" and contains(@class,"article")]'):
-                        a.set('style', 'font-size:0.85em;')
+                    li.set('style', 'font-size:0.8em;margin:0.2em 0;line-height:1.25;')
+                    for sp in li.xpath('.//*[local-name()="span" and contains(@class,"article_date")]'):
+                        sp.getparent().remove(sp)
+                lis = root.xpath('//*[local-name()="li" and starts-with(@id,"article_")]')
+                if lis:
+                    heads = root.xpath('//*[local-name()="head"]')
+                    if heads:
+                        st = heads[0].makeelement('{http://www.w3.org/1999/xhtml}style', {})
+                        st.text = 'li[id^="article_"]{font-size:0.8em !important;margin:0.2em 0;line-height:1.25;}'
+                        heads[0].append(st)
                     for sp in li.xpath('.//*[local-name()="span" and contains(@class,"article_date")]'):
                         sp.getparent().remove(sp)
         except Exception as e:

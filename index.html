@@ -52,12 +52,13 @@ label.opt { font-size:12.5px; color:#6a6f78; display:block; margin-bottom:4px; }
 
 <section class="card">
   <h2>1 · 访问令牌</h2>
-  <p class="hint">创建 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained PAT</a>：仅勾选本仓库，权限 Actions(读写) + Variables(读写)。令牌只保存在本机浏览器，不会发送到任何其他服务器。</p>
+  <p class="hint">创建 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained PAT</a>：仅勾选本仓库，权限 Actions(读写) + Variables(读写)，建议有效期 30–90 天。令牌保存在浏览器本机并按域名隔离，其他网站无法读取；默认仅本次会话有效（关闭标签页即清除），勾选下方选项才会长期记住。</p>
   <div class="row">
     <input type="password" id="token" placeholder="github_pat_…">
     <button id="save-token">保存并验证</button>
     <button id="clear-token" style="background:#888780;">清除</button>
   </div>
+  <label class="opt"><input type="checkbox" id="remember-token" style="vertical-align:-2px;"> 在本机长期记住令牌（信任此设备时勾选）</label>
   <div class="msg" id="auth-msg"></div>
 </section>
 
@@ -73,14 +74,20 @@ label.opt { font-size:12.5px; color:#6a6f78; display:block; margin-bottom:4px; }
 </section>
 
 <section class="card">
-  <h2>3 · 收件邮箱配置</h2>
-  <p class="hint">保存为仓库变量 vars.TO，定时与手动推送都会使用它（未设置时回退到 secrets.TO）。</p>
-  <div class="hint" id="cur-email">当前值：未读取</div>
+  <h2>3 · 收件邮箱与书名</h2>
+  <p class="hint">邮箱存为 vars.TO（未设置回退 secrets.TO）；书名存为 vars.BOOK_TITLE，输入留空并保存即恢复默认。均在下一次推送生效。</p>
+  <div class="hint" id="cur-email">当前邮箱：未读取</div>
   <div class="row">
-    <input type="email" id="new-email" placeholder="新邮箱，如 yourname@kindle.cn">
+    <input type="email" id="new-email" placeholder="收件邮箱，如 yourname@kindle.cn">
     <button id="save-email">保存邮箱</button>
   </div>
   <div class="msg" id="email-msg"></div>
+  <div class="hint" id="cur-title" style="margin-top:12px;">当前书名：未读取</div>
+  <div class="row">
+    <input type="text" id="new-title" placeholder="书名，如 我的早报（留空并保存=恢复默认）">
+    <button id="save-title">保存书名</button>
+  </div>
+  <div class="msg" id="title-msg"></div>
 </section>
 
 <section class="card">
@@ -106,8 +113,9 @@ label.opt { font-size:12.5px; color:#6a6f78; display:block; margin-bottom:4px; }
 const OWNER='chen113323', REPO='Calibre-News-Delivery', WF='calibre-news.yml', BR='master';
 const TK_KEY='wml_console_token';
 const $=id=>document.getElementById(id);
-let token=localStorage.getItem(TK_KEY)||'';
+let token=sessionStorage.getItem(TK_KEY)||localStorage.getItem(TK_KEY)||'';
 $('token').value=token;
+$('remember-token').checked=!!localStorage.getItem(TK_KEY);
 
 function setMsg(id,text,cls){ const el=$(id); el.textContent=text; el.className='msg '+(cls||''); }
 async function api(path,opts={},allow404=false){
@@ -147,11 +155,40 @@ async function loadRuns(){
 async function loadVar(){
   try{
     const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/TO',{},true);
-    $('cur-email').textContent=v?('当前值：'+v.value):'当前值：未设置（回退到 secrets.TO）';
+    $('cur-email').textContent=v?('当前邮箱：'+v.value):'当前邮箱：未设置（回退到 secrets.TO）';
   }catch(e){
-    $('cur-email').textContent='当前值：'+e.message;
+    $('cur-email').textContent='当前邮箱：'+e.message;
   }
 }
+
+const DEFAULT_TITLE='人民日报与半月谈';
+async function loadTitle(){
+  try{
+    const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/BOOK_TITLE',{},true);
+    $('cur-title').textContent=v?('当前书名：'+v.value):('当前书名：'+DEFAULT_TITLE+'（未自定义）');
+  }catch(e){
+    $('cur-title').textContent='当前书名：'+e.message;
+  }
+}
+$('save-title').onclick=async()=>{
+  if(!token){ setMsg('title-msg','请先在「1」中保存令牌','bad'); return; }
+  const v=$('new-title').value.trim();
+  setMsg('title-msg','保存中…');
+  try{
+    if(v){
+      await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/BOOK_TITLE',{
+        method:'PUT', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({name:'BOOK_TITLE',value:v})
+      });
+      setMsg('title-msg','已保存 ✓ 下一次推送书名为《'+v+'》','ok');
+    }else{
+      await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/BOOK_TITLE',{method:'DELETE'},true);
+      setMsg('title-msg','已清除自定义书名，下一次推送恢复默认','ok');
+    }
+    loadTitle().catch(()=>{});
+    $('new-title').value='';
+  }catch(e){ setMsg('title-msg','保存失败：'+e.message,'bad'); }
+};
 
 const DEFAULT_FEEDS=[
  ['人民日报电子版','https://rsshub.ktachibana.party/people/paper'],
@@ -227,14 +264,18 @@ $('save-token').onclick=async()=>{
   setMsg('auth-msg','验证中…');
   try{
     await api('/repos/'+OWNER+'/'+REPO);
-    localStorage.setItem(TK_KEY,token);
-    setMsg('auth-msg','令牌有效，已保存到本机','ok');
+    if($('remember-token').checked){ localStorage.setItem(TK_KEY,token); sessionStorage.removeItem(TK_KEY); }
+    else { sessionStorage.setItem(TK_KEY,token); localStorage.removeItem(TK_KEY); }
+    setMsg('auth-msg','令牌有效，已保存'+($('remember-token').checked?'（本机长期）':'（仅本次会话，关闭标签页即清除）'),'ok');
     loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
     loadVar().catch(()=>{});
+    loadTitle().catch(()=>{});
+    loadFeeds().catch(()=>{});
   }catch(e){ setMsg('auth-msg',e.message,'bad'); }
 };
 $('clear-token').onclick=()=>{
-  localStorage.removeItem(TK_KEY); token=''; $('token').value='';
+  sessionStorage.removeItem(TK_KEY); localStorage.removeItem(TK_KEY);
+  token=''; $('token').value=''; $('remember-token').checked=false;
   setMsg('auth-msg','已清除本机保存的令牌','warn');
 };
 
@@ -294,6 +335,7 @@ if(token){
     setMsg('auth-msg','令牌有效','ok');
     loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
     loadVar().catch(()=>{});
+    loadTitle().catch(()=>{});
     loadFeeds().catch(()=>{});
   }).catch(e=>setMsg('auth-msg','已保存的令牌不可用：'+e.message,'bad'));
 }else{

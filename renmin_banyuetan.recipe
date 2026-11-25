@@ -3,8 +3,44 @@
 # 人民日报电子版 + 半月谈 · 全文 RSS 推送
 # 数据源：RSSHub（rsshub.ktachibana.party，实测全文输出路由）
 # 说明：use_embedded_content=True 直接使用 feed 内嵌全文，无需二次抓取原站
+# 自定义源：workflow 注入环境变量 FEEDS_CONFIG（JSON 数组 [{"title","url"}]，
+#          由网页控制台维护 vars.FEEDS）；缺失/损坏时回退下方默认源
+
+import json
+import os
 
 from calibre.web.feeds.news import BasicNewsRecipe
+
+DEFAULT_FEEDS = [
+    (u'人民日报电子版', 'https://rsshub.ktachibana.party/people/paper'),
+    (u'半月谈·今日谈', 'https://rsshub.ktachibana.party/banyuetan/jinritan'),
+    (u'半月谈·时政讲解', 'https://rsshub.ktachibana.party/banyuetan/shizhengjiangjie'),
+    (u'半月谈·评论', 'https://rsshub.ktachibana.party/banyuetan/banyuetanpinglun'),
+    (u'半月谈·基层治理', 'https://rsshub.ktachibana.party/banyuetan/jicengzhili'),
+    (u'半月谈·文化', 'https://rsshub.ktachibana.party/banyuetan/wenhua'),
+    (u'半月谈·教育', 'https://rsshub.ktachibana.party/banyuetan/jiaoyu'),
+]
+
+
+def load_feeds():
+    """读取网页控制台配置的自定义源；未设置或格式损坏时回退默认源。"""
+    raw = os.environ.get('FEEDS_CONFIG') or os.environ.get('feeds_config') or ''
+    if raw.strip():
+        try:
+            items = json.loads(raw)
+            feeds = []
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                t = str(it.get('title') or '').strip()
+                u = str(it.get('url') or '').strip()
+                if t and u:
+                    feeds.append((t, u))
+            if feeds:
+                return feeds
+        except Exception:
+            pass
+    return DEFAULT_FEEDS
 
 
 class RenminBanyuetan(BasicNewsRecipe):
@@ -21,15 +57,9 @@ class RenminBanyuetan(BasicNewsRecipe):
     no_stylesheets = True
     remove_javascript = True
 
-    feeds = [
-        (u'人民日报电子版', 'https://rsshub.ktachibana.party/people/paper'),
-        (u'半月谈·今日谈', 'https://rsshub.ktachibana.party/banyuetan/jinritan'),
-        (u'半月谈·时政讲解', 'https://rsshub.ktachibana.party/banyuetan/shizhengjiangjie'),
-        (u'半月谈·评论', 'https://rsshub.ktachibana.party/banyuetan/banyuetanpinglun'),
-        (u'半月谈·基层治理', 'https://rsshub.ktachibana.party/banyuetan/jicengzhili'),
-        (u'半月谈·文化', 'https://rsshub.ktachibana.party/banyuetan/wenhua'),
-        (u'半月谈·教育', 'https://rsshub.ktachibana.party/banyuetan/jiaoyu'),
-    ]
+    def get_feeds(self):
+        """动态 feed 列表：优先网页控制台配置的自定义源（vars.FEEDS），回退默认。"""
+        return load_feeds()
 
     # 分区目录内容页：标题字号降为接近正文（rescale 120→90）+ 删除标题后的日期
     # 机制：flatcss 转换读取 data-calibre-rescale 计算最终 font-size（内联 font-size 会被其覆盖，勿用）

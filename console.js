@@ -198,7 +198,7 @@ function renderSchedule(){
     $('sched-cur').textContent='当前定时：'+scheduleText(sch,false)+'（北京时间）'+(sch.paused?' · 自动推送已暂停':' · 自动推送已开启');
   }
   if($('auto-state-text')){
-    $('auto-state-text').textContent=sch.paused?'当前已暂停自动推送，可到控制台首页恢复':'当前自动推送已开启，可到控制台首页暂停';
+    $('auto-state-text').textContent=sch.paused?'当前已暂停自动推送，可用上方按钮恢复':'当前自动推送已开启，可用上方按钮暂停';
   }
   if($('chip-sched')){
     $('chip-sched').textContent=state.page==='home'
@@ -226,7 +226,7 @@ async function loadSchedule(){
   return sch;
 }
 async function toggleAuto(){
-  if(!state.verified){ setMsg('auto-msg','请先保存并验证令牌','bad'); return; }
+  if(!state.verified){ setMsg('auto-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
   if(!state.schedule){ setMsg('auto-msg','定时状态未读取，请先刷新','bad'); return; }
   var pause=!state.schedule.paused, btn=$('btn-auto');
   if(!confirm(pause
@@ -248,7 +248,7 @@ async function toggleAuto(){
   unbusy(btn);
 }
 async function saveSchedule(){
-  if(!state.verified){ setMsg('sched-msg','请先在控制台首页保存并验证令牌','bad'); return; }
+  if(!state.verified){ setMsg('sched-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
   var freq=$('sched-freq').value, time=$('sched-time').value;
   if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){
     setMsg('sched-msg','请输入有效时间（HH:MM，24 小时制）','bad'); return;
@@ -322,7 +322,7 @@ async function loadFeeds(){
   }
 }
 async function saveFeeds(){
-  if(!state.verified){ setMsg('feeds-msg','请先保存并验证令牌','bad'); return; }
+  if(!state.verified){ setMsg('feeds-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
   var rows=Array.prototype.slice.call(document.querySelectorAll('#feed-rows .feedrow')), arr=[], i;
   for(i=0;i<rows.length;i++){
     var t=rows[i].querySelector('.ft').value.trim(), u=rows[i].querySelector('.fu').value.trim();
@@ -342,7 +342,7 @@ async function saveFeeds(){
   unbusy(btn);
 }
 async function resetFeeds(){
-  if(!state.verified){ setMsg('feeds-msg','请先保存并验证令牌','bad'); return; }
+  if(!state.verified){ setMsg('feeds-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
   if(!confirm('确定恢复内置默认源吗？将清除你在网页上保存的自定义源列表。')) return;
   try{
     await delVar('FEEDS');
@@ -433,7 +433,7 @@ function renderStopbar(){
 
 /* ========== 手动推送与取消单次运行 ========== */
 async function dispatch(){
-  if(!state.verified){ setMsg('dispatch-msg','请先在「1」中保存并验证令牌','bad'); return; }
+  if(!state.verified){ setMsg('dispatch-msg','请先到「配置」页保存并验证令牌','bad'); return; }
   var btn=$('btn-dispatch'); busy(btn,'触发中…'); setMsg('dispatch-msg','');
   var temp=$('temp-email')?$('temp-email').value.trim():'';
   if(temp&&temp.indexOf('@')<1){ setMsg('dispatch-msg','临时邮箱格式不正确','bad'); unbusy(btn); return; }
@@ -470,7 +470,7 @@ function pollNewRun(start){
   },15000);
 }
 async function cancelRun(id){
-  if(!state.verified){ setMsg('dispatch-msg','请先保存并验证令牌','bad'); return; }
+  if(!state.verified){ setMsg('dispatch-msg','请先到「配置」页保存并验证令牌','bad'); return; }
   if(!confirm('确定取消 run #'+id+' 这「一次」运行吗？\n这不会暂停自动推送；若已进入发送步骤，邮件可能已发出。')) return;
   var btn=$('btn-stop'); busy(btn,'取消中…');
   setMsg('dispatch-msg','正在请求取消 run #'+id+' …','warn');
@@ -499,6 +499,7 @@ async function cancelRun(id){
 function setAuthenticated(ok){
   state.verified=ok;
   var warn=$('settings-auth-warn'); if(warn){ warn.classList.toggle('show',!ok); }
+  var hw=$('home-auth-warn'); if(hw){ hw.classList.toggle('show',!ok); }
   if($('btn-auto')){ $('btn-auto').disabled=!ok; }
   if(!ok){
     state.runs=[]; state.runningRun=null; state.schedule=null; state.email=''; state.title=DEFAULT_TITLE;
@@ -651,9 +652,8 @@ function bindTokenEvents(){
 /* ========== 操作台初始化 ========== */
 async function initHome(){
   state.page='home'; initCommon();
-  registerCollapsible('sec-auth',{openText:'收起',closedText:'管理'});
   registerCollapsible('sec-runs',{openText:'收起',closedText:'展开'});
-  bindTokenEvents(); initNav();
+  initNav();
   if($('btn-dispatch')){ $('btn-dispatch').addEventListener('click',dispatch); }
   if($('btn-stop')){
     $('btn-stop').addEventListener('click',function(){
@@ -663,12 +663,11 @@ async function initHome(){
   }
   if($('btn-refresh')){
     $('btn-refresh').addEventListener('click',function(){
-      if(!state.verified){ setMsg('dispatch-msg','请先保存并验证令牌','bad'); return; }
+      if(!state.verified){ setMsg('dispatch-msg','请先到「配置」页保存并验证令牌','bad'); return; }
       Promise.all([loadRuns(),loadSchedule()]).then(function(){ toast('状态已刷新','ok'); })
         .catch(function(e){ setMsg('dispatch-msg','刷新失败：'+e.message,'bad'); });
     });
   }
-  if($('btn-auto')){ $('btn-auto').addEventListener('click',toggleAuto); }
   if($('runs')){
     $('runs').addEventListener('click',function(e){
       var b=e.target.closest('[data-stop]');
@@ -680,7 +679,7 @@ async function initHome(){
   }
   if($('runs-refresh')){
     $('runs-refresh').addEventListener('click',function(){
-      if(!state.verified){ toast('请先验证令牌','warn'); return; }
+      if(!state.verified){ toast('请先到「配置」页验证令牌','warn'); return; }
       loadRuns().catch(function(e){ toast('刷新失败：'+e.message,'bad'); });
     });
   }
@@ -693,9 +692,12 @@ async function initHome(){
 /* ========== 配置页初始化 ========== */
 async function initSettings(){
   state.page='settings'; initCommon();
+  registerCollapsible('sec-auth',{openText:'收起',closedText:'管理'});
+  bindTokenEvents();
+  if($('btn-auto')){ $('btn-auto').addEventListener('click',toggleAuto); }
   if($('save-email')){
     $('save-email').addEventListener('click',async function(){
-      if(!state.verified){ setMsg('email-msg','请先在控制台首页保存并验证令牌','bad'); return; }
+      if(!state.verified){ setMsg('email-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
       var v=$('new-email').value.trim();
       if(!v||v.indexOf('@')<1){ setMsg('email-msg','请输入有效邮箱','bad'); return; }
       var btn=$('save-email'); busy(btn,'保存中…');
@@ -710,7 +712,7 @@ async function initSettings(){
   }
   if($('save-title')){
     $('save-title').addEventListener('click',async function(){
-      if(!state.verified){ setMsg('title-msg','请先在控制台首页保存并验证令牌','bad'); return; }
+      if(!state.verified){ setMsg('title-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
       var v=$('new-title').value.trim(), btn=$('save-title'); busy(btn,'保存中…');
       try{
         if(v){ await putVar('BOOK_TITLE',v); setMsg('title-msg','已保存 ✓ 下一次推送书名为《'+v+'》','ok'); }

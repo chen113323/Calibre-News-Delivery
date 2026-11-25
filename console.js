@@ -46,8 +46,20 @@ function toast(text,type){
   setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.remove(); },320); },3800);
 }
 function setMsg(id,text,cls){ var el=$(id); if(el){ el.textContent=text||''; el.className='msg '+(cls||''); } }
-function busy(btn,txt){ if(!btn) return; btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent=txt; }
-function unbusy(btn){ if(!btn) return; btn.disabled=false; if(btn.dataset.old) btn.textContent=btn.dataset.old; }
+/* 看门狗：任何按钮进入 busy 后最长 20 秒必定恢复，防止网络挂起/异常时永久禁用 */
+var BUSY_MS=20000;
+function busy(btn,txt){
+  if(!btn) return;
+  if(btn.dataset.watch){ clearTimeout(Number(btn.dataset.watch)); }
+  btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent=txt;
+  btn.dataset.watch=String(setTimeout(function(){ unbusy(btn); },BUSY_MS));
+}
+function unbusy(btn){
+  if(!btn) return;
+  if(btn.dataset.watch){ clearTimeout(Number(btn.dataset.watch)); delete btn.dataset.watch; }
+  btn.disabled=false;
+  if(btn.dataset.old) btn.textContent=btn.dataset.old;
+}
 function fmtTime(s){ return new Date(s).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
 function bjNow(){
   var d=new Date(Date.now()+8*3600*1000);
@@ -86,11 +98,29 @@ function storeToken(t,persist){
 function wipeToken(){ ssDel(TK_KEY); lsDel(TK_KEY); }
 
 /* ========== GitHub API 封装 ========== */
+/* GitHub API 超时保护：单个请求最长 15 秒，超时抛可读错误，避免按钮永久卡死 */
+var API_TIMEOUT_MS=15000;
 async function api(path,opts,allow404){
   opts=opts||{};
   var headers=Object.assign({'Accept':'application/vnd.github+json'},opts.headers||{});
   if(state.token){ headers['Authorization']='Bearer '+state.token; }
-  var r=await fetch('https://api.github.com'+path,Object.assign({},opts,{headers:headers,cache:'no-store'}));
+  var ctrl=typeof AbortController!=='undefined'?new AbortController():null;
+  var timer=null, timedOut=false;
+  var req=Object.assign({},opts,{headers:headers,cache:'no-store',signal:ctrl?ctrl.signal:undefined});
+  // Promise.race 保证超时一定 reject，即使底层 fetch 不响应 abort 也不会让调用方永久挂起
+  var timeoutP=new Promise(function(_,reject){
+    timer=setTimeout(function(){ timedOut=true; reject(new Error('请求超时（'+Math.round(API_TIMEOUT_MS/1000)+' 秒），请检查网络后重试')); },API_TIMEOUT_MS);
+  });
+  var r;
+  try{
+    r=await Promise.race([fetch('https://api.github.com'+path,req),timeoutP]);
+  }catch(e){
+    if(timedOut) throw e;
+    throw new Error('网络请求失败：'+(e&&e.message?e.message:'未知错误'));
+  }finally{
+    if(timer) clearTimeout(timer);
+    if(timedOut&&ctrl){ try{ ctrl.abort(); }catch(_){} }
+  }
   if(r.status===401) throw new Error('令牌无效或已过期');
   if(r.status===404){
     if(allow404) return null;
@@ -912,7 +942,12 @@ async function initSettings(){
   if($('save-title')){
     $('save-title').addEventListener('click',async function(){
       if(!state.verified){ setMsg('title-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
-      var v=$('new-title').value.trim(), btn=$('save-title'); busy(btn,'保存中…');
+      var v=$('new-title').value.trim(), btn=$('save-title');
+      if(v&&/[\\/:*?"<>|\x00-\x1f\x7f]/.test(v)){
+        setMsg('title-msg','书名不能包含 / \\ : * ? " < > | 等字符（会用作 EPUB 文件名）','bad'); return;
+      }
+      if(v&&(v.length>80)){ setMsg('title-msg','书名请控制在 80 个字符以内','bad'); return; }
+      busy(btn,'保存中…');
       try{
         if(v){ await putVar('BOOK_TITLE',v); setMsg('title-msg','已保存 ✓ 下一次推送书名为《'+v+'》','ok'); }
         else{ await delVar('BOOK_TITLE'); setMsg('title-msg','已清除自定义书名，下一次推送恢复默认','ok'); }

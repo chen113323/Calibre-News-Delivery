@@ -11,6 +11,7 @@ var REPO_API='/repos/'+OWNER+'/'+REPO;
 var RUNS_ALL=REPO_API+'/actions/workflows/'+WF+'/runs?per_page=100';
 var RUNS_ONE=REPO_API+'/actions/workflows/'+WF+'/runs?per_page=1';
 var WF_API=REPO_API+'/actions/workflows/'+WF;
+var ALERT_WF='alert.yml';
 var DEFAULT_TITLE='人民日报与半月谈';
 var DEFAULT_FEEDS=[
  ['人民日报电子版','https://rsshub.ktachibana.party/people/paper'],
@@ -23,8 +24,9 @@ var DEFAULT_FEEDS=[
 ];
 var state={
   token:'', persist:false, verified:false, page:'home',
-  runs:[], range:'7', runningRun:null,
-  email:'', title:DEFAULT_TITLE, feeds:[], schedule:null, workflowState:'unknown'
+  runs:[], range:'7', runningRun:null, runsLoaded:false, loadErrors:[],
+  email:'', title:DEFAULT_TITLE, feeds:[], schedule:null, workflowState:'unknown',
+  alertCfg:{to:'',hours:26,enabled:'1'}
 };
 /* schedule 块：开启态 / 暂停态（cron 行整体注释，保留表达式） */
 var RE_ON=/^  schedule:[^\n]*\n(?:    - cron:[^\n]*\n?)+/m;
@@ -323,10 +325,12 @@ function renderWorkflowState(){
   if(btn){ btn.style.display=bad?'inline-block':'none'; }
   var hw=$('home-workflow-warn');
   if(hw){ hw.classList.toggle('show',bad); }
+  renderAlerts();
 }
 async function loadWorkflowState(){
   var d=await api(WF_API);
   state.workflowState=d.state||'unknown';
+  clearError('定时任务状态');
   renderWorkflowState();
   return state.workflowState;
 }
@@ -359,6 +363,100 @@ async function enableWorkflow(){
     toast('启用失败','bad');
   }
   unbusy(btn);
+}
+
+/* ========== 告警中心（页面侧，不依赖 SMTP） ========== */
+function recordError(label,e){
+  state.runsLoaded=true;
+  var msg=label+'：'+(e&&e.message?e.message:'读取失败');
+  if(state.loadErrors.indexOf(msg)<0) state.loadErrors.push(msg);
+  renderAlerts();
+}
+function clearError(label){
+  state.loadErrors=state.loadErrors.filter(function(x){ return x.indexOf(label+'：')!==0; });
+}
+function renderAlerts(){
+  var box=state.page==='home'?$('home-alert'):$('settings-alert');
+  if(!box) return;
+  var items=[];
+  state.loadErrors.forEach(function(m){ items.push({bad:true,text:'数据读取失败 · '+m}); });
+  if(/^disabled/.test(state.workflowState||'')){
+    items.push({bad:true,text:'GitHub 已停用定时工作流（'+state.workflowState+'）。请到配置页「重新启用定时任务」，手动推送不受影响。'});
+  }
+  var latest=state.runs[0];
+  var lastFailed=latest&&latest.status==='completed'&&
+     ['failure','timed_out','startup_failure','stale','action_required'].indexOf(latest.conclusion)>=0;
+  if(lastFailed){
+    items.push({bad:true,text:'最近一次推送失败（'+fmtTime(latest.created_at)+'），请查看日志后手动补推。',
+      url:latest.html_url,link:'查看日志'});
+  }
+  /* 已明确失败时不再叠加「漏推」，避免同一故障报两条 */
+  if(!lastFailed&&state.verified&&state.runsLoaded&&state.loadErrors.length===0&&
+     !(state.schedule&&state.schedule.paused)&&!/^disabled/.test(state.workflowState||'')){
+    var lastOk=state.runs.filter(function(r){ return r.conclusion==='success'; })[0];
+    var hours=parseInt(state.alertCfg.hours,10)||26;
+    if(!lastOk||Date.now()-new Date(lastOk.created_at).getTime()>hours*3600000){
+      items.push({bad:false,text:lastOk
+        ? '距最近一次成功推送已超过 '+hours+' 小时，疑似漏推（定时可能被 GitHub 跳过）'
+        : '尚无成功推送记录，疑似漏推；可点「立即推送」验证链路'});
+    }
+  }
+  if(!items.length){ box.className='alertbar'; box.innerHTML=''; return; }
+  var hasBad=items.some(function(x){ return x.bad; });
+  box.className='alertbar show'+(hasBad?'':' mild');
+  var head=document.createElement('div'); head.className='ab-head';
+  head.textContent='⚠ 告警 · '+items.length+' 项';
+  var ul=document.createElement('ul');
+  items.forEach(function(it){
+    var li=document.createElement('li'); li.textContent=it.text;
+    if(it.url&&it.url.indexOf('https://')===0){
+      var a=document.createElement('a'); a.href=it.url; a.target='_blank'; a.rel='noopener';
+      a.textContent=' '+(it.link||'详情'); li.appendChild(a);
+    }
+    ul.appendChild(li);
+  });
+  box.innerHTML=''; box.appendChild(head); box.appendChild(ul);
+}
+async function loadAlertCfg(){
+  var to=await getVar('ALERT_TO'), h=await getVar('ALERT_HOURS'), en=await getVar('ALERT_ENABLED');
+  var hv=h?parseInt(h.value,10):26;
+  state.alertCfg={to:to?to.value:'', hours:(hv>=2&&hv<=168)?hv:26, enabled:(en&&en.value==='0')?'0':'1'};
+  clearError('告警设置'); renderAlertCfg(); renderAlerts();
+}
+function renderAlertCfg(){
+  if($('alert-to')) $('alert-to').value=state.alertCfg.to;
+  if($('alert-hours')) $('alert-hours').value=state.alertCfg.hours;
+  if($('alert-enabled')) $('alert-enabled').value=state.alertCfg.enabled;
+  if($('cur-alert-to')) $('cur-alert-to').textContent='当前：'+(state.alertCfg.to||'未设置（发给发件邮箱）');
+  if($('cur-alert-hours')) $('cur-alert-hours').textContent='当前：'+state.alertCfg.hours+' 小时';
+}
+async function saveAlertCfg(){
+  if(!state.verified){ setMsg('alert-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
+  var to=$('alert-to').value.trim(), h=parseInt($('alert-hours').value,10), en=$('alert-enabled').value;
+  if(to&&!/^[^\s@,;]+@[^\s@,;]+\.[^\s@,;]+$/.test(to)){ setMsg('alert-msg','告警邮箱格式不正确','bad'); return; }
+  if(isNaN(h)||h<2||h>168){ setMsg('alert-msg','漏推阈值需在 2–168 小时之间','bad'); return; }
+  var btn=$('save-alert'); busy(btn,'保存中…');
+  try{
+    if(to) await putVar('ALERT_TO',to); else await delVar('ALERT_TO');
+    await putVar('ALERT_HOURS',String(h));
+    await putVar('ALERT_ENABLED',en);
+    await loadAlertCfg();
+    setMsg('alert-msg','已保存 ✓ 告警设置已生效','ok'); toast('告警设置已保存','ok');
+  }catch(e){ setMsg('alert-msg','保存失败：'+e.message,'bad'); }
+  finally{ unbusy(btn); }
+}
+async function testAlert(){
+  if(!state.verified){ setMsg('alert-test-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
+  var btn=$('send-test-alert'); busy(btn,'发送中…');
+  try{
+    await api('/repos/'+OWNER+'/'+REPO+'/actions/workflows/'+ALERT_WF+'/dispatches',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ref:BR,inputs:{subject:'【测试】Kindle 推送告警'}})
+    });
+    setMsg('alert-test-msg','已触发 ✓ 测试告警正在发送，稍后查看收件箱或 Actions → Alert Test 日志','ok');
+    toast('测试告警已触发','ok');
+  }catch(e){ setMsg('alert-test-msg','触发失败：'+e.message,'bad'); toast('测试告警触发失败','bad'); }
+  finally{ unbusy(btn); }
 }
 
 /* ========== 邮箱、书名、RSS 源 ========== */
@@ -487,13 +585,14 @@ function renderRuns(){
     sum+=' · 最近'+(latest.conclusion==='success'?'成功':latest.conclusion==='failure'?'失败':latest.status==='completed'?'结束':'进行中')+' '+fmtTime(latest.created_at);
   }
   if($('runs-summary')){ $('runs-summary').textContent=' · '+sum; }
-  renderStopbar(); updateHero();
+  renderStopbar(); updateHero(); renderAlerts();
 }
 async function loadRuns(){
   if(!state.verified){ state.runs=[]; state.runningRun=null; renderRuns(); return; }
   var data=await api(RUNS_ALL);
   state.runs=data.workflow_runs||[];
   state.runningRun=state.runs.filter(function(r){ return r.status!=='completed'; })[0]||null;
+  clearError('运行记录');
   renderRuns();
 }
 function updateHero(){
@@ -586,6 +685,8 @@ async function cancelRun(id,srcBtn){
 /* ========== 令牌验证与界面刷新 ========== */
 function setAuthenticated(ok){
   state.verified=ok;
+  state.loadErrors=[]; state.runsLoaded=false;
+  state.alertCfg={to:'',hours:26,enabled:'1'}; renderAlertCfg();
   var warn=$('settings-auth-warn'); if(warn){ warn.classList.toggle('show',!ok); }
   var hw=$('home-auth-warn'); if(hw){ hw.classList.toggle('show',!ok); }
   if($('btn-auto')){ $('btn-auto').disabled=!ok; }
@@ -607,8 +708,8 @@ function setAuthenticated(ok){
 async function refreshAll(){
   var jobs=[];
   if(state.page==='home'){
-    jobs.push(loadRuns().catch(function(e){ setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'); }));
-    jobs.push(loadWorkflowState().catch(function(){}));
+    jobs.push(loadRuns().catch(function(e){ recordError('运行记录',e); }));
+    jobs.push(loadWorkflowState().catch(function(e){ recordError('定时任务状态',e); }));
     jobs.push(loadTitle().catch(function(e){ if($('chip-title')) $('chip-title').textContent='书名：读取失败'; }));
     jobs.push(loadSchedule().catch(function(e){
       if($('sched-cur')) $('sched-cur').textContent='当前定时：读取失败（'+e.message+'）';
@@ -616,8 +717,9 @@ async function refreshAll(){
       if($('chip-sched')) $('chip-sched').textContent=state.page==='home'?'自动：未读取':'定时：未读取';
     }));
   }else{
-    jobs.push(loadRuns().catch(function(){}));
-    jobs.push(loadWorkflowState().catch(function(){}));
+    jobs.push(loadRuns().catch(function(e){ recordError('运行记录',e); }));
+    jobs.push(loadWorkflowState().catch(function(e){ recordError('定时任务状态',e); }));
+    jobs.push(loadAlertCfg().catch(function(e){ recordError('告警设置',e); }));
     jobs.push(loadEmail().catch(function(e){ if($('cur-email')) $('cur-email').textContent='当前邮箱：读取失败（'+e.message+'）'; }));
     jobs.push(loadTitle().catch(function(e){ if($('cur-title')) $('cur-title').textContent='当前书名：读取失败（'+e.message+'）'; }));
     jobs.push(loadSchedule().catch(function(e){
@@ -626,6 +728,7 @@ async function refreshAll(){
     jobs.push(loadFeeds().catch(function(){}));
   }
   await Promise.all(jobs);
+  state.runsLoaded=true; renderAlerts();
 }
 async function verifyToken(silent){
   if(!state.token){ setAuthenticated(false); return false; }
@@ -715,7 +818,7 @@ async function bootstrapAuth(){
     setCollapsed('sec-auth',false);
   }
   if(state.page==='home'){
-    setInterval(function(){ if(state.verified){ loadRuns().catch(function(){}); } },20000);
+    setInterval(function(){ if(state.verified){ loadRuns().catch(function(e){ recordError('运行记录',e); }); } },20000);
   }
 }
 function bindTokenEvents(){
@@ -822,6 +925,8 @@ async function initSettings(){
   if($('add-feed')){ $('add-feed').addEventListener('click',function(){ if($('feed-rows')) $('feed-rows').appendChild(feedRow('','')); }); }
   if($('save-feeds')){ $('save-feeds').addEventListener('click',saveFeeds); }
   if($('reset-feeds')){ $('reset-feeds').addEventListener('click',resetFeeds); }
+  if($('save-alert')){ $('save-alert').addEventListener('click',saveAlertCfg); }
+  if($('send-test-alert')){ $('send-test-alert').addEventListener('click',testAlert); }
   await bootstrapAuth();
 }
 
@@ -830,6 +935,7 @@ return {
   _test:{parseScheduleState:parseScheduleState,toggleScheduleBlock:toggleScheduleBlock,
     parseCron:parseCron,buildCron:buildCron,renderSchedule:renderSchedule,
     renderRuns:renderRuns,setAuthenticated:setAuthenticated,loadSchedule:loadSchedule,
-    renderWorkflowState:renderWorkflowState,loadWorkflowState:loadWorkflowState}
+    renderWorkflowState:renderWorkflowState,loadWorkflowState:loadWorkflowState,
+    renderAlerts:renderAlerts,recordError:recordError,loadAlertCfg:loadAlertCfg,renderAlertCfg:renderAlertCfg}
 };
 })();

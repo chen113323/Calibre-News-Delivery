@@ -1,34 +1,90 @@
 name: Keepalive
-run-name: 'Keepalive: keep scheduled workflows active'
+run-name: 'Keepalive: 仓库活动心跳'
 
-# GitHub 会在 public 仓库「60 天无仓库活动」时自动禁用所有 scheduled workflows，
-# 而定时运行本身不算活动。本工作流每约 15 天产生一次真实提交，持续重置该计时，
-# 从而保护 calibre-news.yml 的每日推送任务。它独立于业务工作流，
-# 即使业务侧的自动推送被暂停（schedule 被注释）也照常运行。
+# 目的：public 仓库连续 60 天没有「仓库活动」时，GitHub 会自动禁用所有定时工作流，
+# 而定时运行本身不算活动，真实提交才算。本工作流周期性产生一次「空提交」重置该计时。
+#
+# 设计原则（刻意与业务完全解耦，最小操作）：
+#  1. 只管自己：不读取、不修改任何业务文件、变量或配置；不引用业务工作流的任何逻辑。
+#     控制台的「暂停/恢复自动推送」只注释 calibre-news.yml 的 schedule 块，
+#     与本工作流没有任何交互，暂停期间本工作流照常运行。
+#  2. 零文件增长：git commit --allow-empty 不含任何文件变更，不产生新的 blob/tree，
+#     工作树永远不变；每次只新增一个约 200 字节的 commit 对象（一年约 12~24 次）。
+#  3. 随机 15~30 天：GitHub cron 是静态表达式，无法表达真随机，因此改为
+#     「每天一次轻量检查 + 确定性伪随机阈值」：阈值由上次心跳时间戳哈希得到，
+#     落在 15~30 天。未到期的检查直接退出，不提交、不改文件、不触发 Pages 构建。
+#  4. 手动触发默认只做检查（dry-run），传 force=true 才真正提交，避免测试污染仓库。
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '17 4 1,15 * *'   # 每月 1/15 日 UTC 04:17（约每 15 天），避开整点高峰
+    - cron: '23 4 * * *'   # 每天 UTC 04:23（北京 12:23），避开整点高峰；仅做检查
+  workflow_dispatch:
+    inputs:
+      force:
+        description: '强制执行一次心跳（默认只检查、不提交）'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
 
 jobs:
   heartbeat:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout（含历史，用于读取上次心跳）
         uses: actions/checkout@v4
-      - name: 写入心跳时间戳并提交
+        with:
+          fetch-depth: 0
+
+      - name: 计算是否到期
+        id: due
+        shell: bash
         run: |
-          mkdir -p .github
-          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/keepalive.txt
+          set -euo pipefail
+          MARK='chore(keepalive): heartbeat'
+
+          # 手动触发且未指定 force：只打印检查结果，不产生任何提交
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo 'dry-run：手动触发未指定 force，只检查不提交'
+            echo 'due=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          last=$(git log -1 --fixed-strings --grep="$MARK" --format='%cI' || true)
+          if [ -z "$last" ]; then
+            echo '未找到历史心跳：立即产生一次初始心跳'
+            echo 'due=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          last_epoch=$(date -u -d "$last" +%s)
+          now=$(date -u +%s)
+          elapsed=$(( (now - last_epoch) / 86400 ))
+
+          # 用上次心跳的时间戳做种子，得到 15~30 之间的确定性伪随机阈值
+          seed=$(printf '%s' "$last" | sha256sum | cut -c1-8)
+          target=$(( 15 + (16#$seed % 16) ))
+          echo "上次心跳: $last"
+          echo "已过天数: $elapsed | 本次阈值: $target 天（seed=$seed）"
+
+          if [ "$elapsed" -ge "$target" ]; then
+            echo 'due=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'due=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 空提交（无任何文件变更）
+        if: steps.due.outputs.due == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .github/keepalive.txt
-          if git diff --staged --quiet; then
-            echo 'timestamp unchanged, nothing to commit'
-          else
-            git commit -m 'chore(keepalive): 保持仓库活动，避免 60 天自动禁用定时任务 [skip ci]'
-            git push
-          fi
+          # --allow-empty：不新增/修改/删除任何文件，只产生一个 commit 对象
+          git commit --allow-empty -m 'chore(keepalive): heartbeat [skip ci]'
+          # push 偶发冲突时直接失败即可：下一次每日检查会自动重试（阈值已满足）
+          git push

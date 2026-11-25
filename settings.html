@@ -30,6 +30,7 @@
   <button class="mini" id="btn-enable-workflow" style="display:none;margin-left:10px;">重新启用定时任务</button>
 </div>
 <div class="msg" id="workflow-msg"></div>
+<div class="alertbar" id="settings-alert"></div>
 
 <section class="card" id="sec-auth">
   <div class="collapse-head" data-toggle="sec-auth">
@@ -110,6 +111,33 @@
     <button class="ghost" id="reset-feeds">恢复默认</button>
   </div>
   <div class="msg" id="feeds-msg"></div>
+</section>
+
+<section class="card">
+  <h2><span class="num">5</span>告警设置</h2>
+  <p class="hint">推送失败时，workflow 会自动发一封告警邮件（复用现有 SMTP，无需新增密钥）；同时本页与控制台顶部会显示失败、漏推、状态读取异常等告警。<b>页面告警不依赖 SMTP</b>，即使邮件通道故障也能看到。</p>
+  <div class="field">
+    <label>告警收件邮箱</label>
+    <div class="cur" id="cur-alert-to">当前：读取中…</div>
+    <div class="row"><input type="email" id="alert-to" placeholder="留空 = 发给发件邮箱（不会误投 Kindle）"></div>
+  </div>
+  <div class="field">
+    <label>漏推判定阈值（小时）</label>
+    <div class="cur" id="cur-alert-hours">当前：读取中…</div>
+    <div class="row"><input type="number" id="alert-hours" min="2" max="168" placeholder="26"></div>
+    <p class="hint" style="margin-bottom:0;">距最近一次<b>成功推送</b>超过该时长，页面会提示「疑似漏推」——这能发现 cron 被 GitHub 跳过（连失败记录都没有）的情况。每天推送建议 26 小时。</p>
+  </div>
+  <div class="field">
+    <label>失败邮件告警</label>
+    <div class="row"><select id="alert-enabled"><option value="1">开启</option><option value="0">关闭</option></select></div>
+  </div>
+  <div class="row" style="margin-top:14px;">
+    <button id="save-alert">保存告警设置</button>
+    <button class="ghost" id="send-test-alert">发送测试告警</button>
+  </div>
+  <div class="msg" id="alert-msg"></div>
+  <div class="msg" id="alert-test-msg"></div>
+  <p class="hint" style="margin-bottom:0;">「发送测试告警」会触发独立的 <code>Alert Test</code> 工作流，只发一封测试邮件，不产生业务推送记录，也不会发送书籍。配置保存为仓库变量 <code>vars.ALERT_TO</code> / <code>ALERT_HOURS</code> / <code>ALERT_ENABLED</code>。</p>
 </section>
 
 <p class="hint" style="text-align:center;margin-top:22px;"><a href="index.html">← 返回控制台</a> · 配置保存在 GitHub 仓库变量与 workflow 中，不会存到本机</p>

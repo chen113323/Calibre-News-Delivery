@@ -453,7 +453,8 @@ async function testAlert(){
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ref:BR,inputs:{subject:'【测试】Kindle 推送告警'}})
     });
-    setMsg('alert-test-msg','已触发 ✓ 测试告警正在发送，稍后查看收件箱或 Actions → Alert Test 日志','ok');
+    setMsg('alert-test-msg','已触发 ✓ 测试告警正在发送，稍后查看收件箱或 Actions → Alert Test 日志'
+      +(state.alertCfg.enabled==='0'?'（注意：失败邮件告警当前为关闭状态，此测试仅验证 SMTP 通道）':''),'ok');
     toast('测试告警已触发','ok');
   }catch(e){ setMsg('alert-test-msg','触发失败：'+e.message,'bad'); toast('测试告警触发失败','bad'); }
   finally{ unbusy(btn); }

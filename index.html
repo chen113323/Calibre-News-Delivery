@@ -135,6 +135,12 @@ button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
   .feedrow .ft{ flex:1 1 100%; }
   .toast{ left:16px; right:16px; max-width:none; }
 }
+@media(min-width:900px){
+  .wrap{ max-width:960px; }
+  .hero{ padding:26px 20px 24px; border-radius:0 0 18px 18px; }
+  .collapse-summary{ font-size:12.5px; }
+  .toast{ right:max(18px,calc((100vw - 960px)/2 + 18px)); }
+}
 </style>
 </head>
 <body>

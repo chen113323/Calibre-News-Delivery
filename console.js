@@ -250,6 +250,7 @@ async function toggleAuto(){
     toast('自动推送状态修改失败','bad');
   }
   unbusy(btn);
+  renderSchedule();
 }
 async function saveSchedule(){
   if(!state.verified){ setMsg('sched-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
@@ -264,7 +265,12 @@ async function saveSchedule(){
     if(!match) throw new Error('未在 workflow 中定位到 cron 行，未做任何修改');
     var newline=match[1]+"- cron: '"+built.expr+"'   # "+built.utcText+' = 北京 '+time+'（'+built.desc+'）';
     var updated=f.text.replace(RE_CRON,newline);
-    if(updated===f.text) throw new Error('cron 行替换失败，未做任何修改');
+    if(updated===f.text){
+      setMsg('sched-msg','当前已是「'+built.desc+' '+time+'（北京时间）」，配置未变化，无需重复保存','ok');
+      toast('配置未变化','ok');
+      unbusy(btn);
+      return;
+    }
     await putWorkflow(updated,f.sha,'更新推送时间：'+built.desc+' 北京 '+time);
     await loadSchedule();
     setMsg('sched-msg','已保存 ✓ '+built.desc+' '+time+'（北京时间），cron 已同步为 '+built.expr

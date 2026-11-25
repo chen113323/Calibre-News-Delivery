@@ -154,3 +154,60 @@ jobs:
           name: Calibre-News-Delivery
           path: ${{ env.output }}
           retention-days: ${{ secrets.DAYS || 90 }}
+
+      # 失败告警：任何前置步骤失败都会触发。脚本内联、只用 Python 标准库，
+      # 不依赖 calibre / checkout / 第三方包，确保「安装 calibre 就失败」这类场景也能发信。
+      # 告警配置走仓库变量（可在 Pages 控制台配置）：
+      #   ALERT_ENABLED=0 关闭；ALERT_TO 指定收件人（留空则发给发件人自己，避免误投 Kindle）；
+      #   ALERT_HOURS 供前端「漏推心跳」判断，workflow 侧不使用。
+      - name: 失败告警邮件
+        if: ${{ failure() && vars.ALERT_ENABLED != '0' }}
+        continue-on-error: true
+        env:
+          ALERT_TO: ${{ vars.ALERT_TO }}
+          ALERT_SUBJECT: 'Kindle 推送失败告警'
+          ALERT_BODY: '工作流运行失败，可能是 RSS 抓取、EPUB 转换或 SMTP 发送环节出错，请查看 Actions 日志。'
+        run: |
+          python3 - <<'PYEOF'
+          import os, sys, smtplib, ssl
+          from email.message import EmailMessage
+          from datetime import datetime, timezone, timedelta
+
+          def e(k, d=''):
+              return os.environ.get(k) or d
+
+          host = e('relay') or e('SMTP')
+          port = int(e('port') or e('PORT') or 465)
+          user = e('from') or e('FROM')
+          pwd = e('secret') or e('SECRET')
+          enc = (e('encrypt') or e('ENCRYPT') or 'SSL').upper()
+          to = e('ALERT_TO') or user
+          if not all([host, user, pwd, to]):
+              print('告警配置不完整，跳过发信（不影响原运行结果）')
+              sys.exit(0)
+
+          bj = datetime.now(timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')
+          url = 'https://github.com/%s/actions/runs/%s' % (
+              e('GITHUB_REPOSITORY'), e('GITHUB_RUN_ID'))
+          msg = EmailMessage()
+          msg['From'] = user
+          msg['To'] = to
+          msg['Subject'] = e('ALERT_SUBJECT', 'Kindle 推送告警')
+          msg.set_content('%s\n\n时间（北京时间）：%s\n运行详情：%s\n\n—— Kindle 推送控制台自动告警'
+                          % (e('ALERT_BODY', '推送任务异常'), bj, url))
+          try:
+              ctx = ssl.create_default_context()
+              if enc == 'SSL':
+                  with smtplib.SMTP_SSL(host, port, context=ctx, timeout=20) as s:
+                      s.login(user, pwd)
+                      s.send_message(msg)
+              else:
+                  with smtplib.SMTP(host, port, timeout=20) as s:
+                      s.starttls(context=ctx)
+                      s.login(user, pwd)
+                      s.send_message(msg)
+              print('告警邮件已发送 ->', to)
+          except Exception as ex:
+              print('告警邮件发送失败:', repr(ex))
+              sys.exit(1)
+          PYEOF

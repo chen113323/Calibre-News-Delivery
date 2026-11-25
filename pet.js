@@ -4,11 +4,13 @@
 if(!document.body){ return; }
 
 var KV='wml_pet_visible', KR='wml_pet_roam';
+function pget(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function pset(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
 var reduced=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 var small=window.matchMedia&&matchMedia('(max-width:899px)').matches;
-var visStored=localStorage.getItem(KV);
+var visStored=pget(KV);
 var visible=visStored===null?!small:visStored!=='0';
-var roam=localStorage.getItem(KR)!=='0'&&!reduced&&!small;
+var roam=pget(KR)!=='0'&&!reduced&&!small;
 var GROUND=small?16:22, SIZE=small?64:88;
 var LINES={
   happy:['今天的新书已送到 Kindle 啦','推送成功，我去歇一会儿'],
@@ -187,14 +189,14 @@ function syncButtons(){
 }
 roamBtn.addEventListener('click',function(){
   if(reduced||small){ return; }
-  roam=!roam; localStorage.setItem(KR,roam?'1':'0');
+  roam=!roam; pset(KR,roam?'1':'0');
   if(!roam){ el.classList.remove('walking'); y=GROUND; apply(); }
   syncButtons();
 });
 hideBtn.addEventListener('click',function(){ setVisible(false); });
 recall.addEventListener('click',function(){ setVisible(true); });
 function setVisible(v){
-  visible=v; localStorage.setItem(KV,v?'1':'0');
+  visible=v; pset(KV,v?'1':'0');
   el.classList.toggle('hidden',!v);
   tools.classList.toggle('hidden',!v);
   recall.hidden=v;

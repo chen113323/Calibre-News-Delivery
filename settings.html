@@ -11,7 +11,7 @@
   <div class="wrap">
     <button class="theme-btn" id="theme-toggle" title="切换深浅主题">◐</button>
     <h1><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6 1.65 1.65 0 0 0 10 3.09V3a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.36.4.66.74.85.3.16.64.25.98.25H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>推送配置</h1>
-    <div class="sub"><a class="backlink" href="index.html">← 返回控制台</a> · 配置保存后下一次推送生效；令牌在控制台首页设置</div>
+    <div class="sub"><a class="backlink" href="index.html">← 返回控制台</a> · 令牌、自动推送开关与全部配置集中在此页</div>
     <div class="chips">
       <span class="chip"><span class="dot" id="hero-dot"></span><span id="hero-status">未验证</span></span>
       <span class="chip" id="chip-sched">定时：—</span>
@@ -22,11 +22,56 @@
 <div class="wrap">
 
 <div class="warnbar" id="settings-auth-warn">
-  尚未验证令牌。请到 <a href="index.html">控制台首页</a> 输入并验证 Fine-grained PAT 后再读取或保存配置。从首页点「配置 →」跳转会自动沿用令牌；若在新标签页打开且未勾选「在本机长期记住」，需回首页重新输入（令牌按标签页会话隔离）。
+  尚未验证令牌。请在下方「1 · 访问令牌」中输入并验证 Fine-grained PAT，之后才能读取或保存配置。令牌只存本机浏览器，控制台首页会自动沿用（同一标签页内跳转可直接沿用；新标签页打开且未勾选「长期记住」时需重新输入）。
 </div>
 
+<section class="card" id="sec-auth">
+  <div class="collapse-head" data-toggle="sec-auth">
+    <h2><span class="num">1</span>访问令牌<span class="collapse-summary" id="auth-summary"> · 未设置</span></h2>
+    <button class="ghost mini" data-btn="sec-auth">收起</button>
+    <span class="arrow">▾</span>
+  </div>
+  <div class="card-body">
+    <p class="hint">创建 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained PAT</a>，仅授权本仓库，勾选：<b>Actions(读写)</b>、<b>Variables(读写)</b>、<b>Contents(读写)</b>、<b>Workflows(读写)</b>（后两项用于自动推送开关与推送时间），建议有效期 30–90 天。令牌只存本机浏览器、按域名隔离；<b>验证后不回显、不写入页面、不出现在任何提示或日志中</b>。默认仅本次会话有效。</p>
+    <div class="row">
+      <input type="password" id="token" placeholder="github_pat_…" autocomplete="new-password" spellcheck="false">
+      <button id="save-token">保存并验证</button>
+      <button class="danger" id="clear-token">清除</button>
+    </div>
+    <label class="opt"><input type="checkbox" id="remember-token"> 在本机长期记住令牌（信任此设备时勾选）</label>
+    <div class="msg" id="auth-msg"></div>
+  </div>
+</section>
+
 <section class="card">
-  <h2><span class="num">1</span>基础设置</h2>
+  <h2><span class="num">2</span>定时与自动推送</h2>
+  <div class="switch-row" id="auto-row">
+    <span class="txt" id="auto-line">自动推送：读取中…</span>
+    <button class="danger" id="btn-auto" disabled>暂停自动推送</button>
+  </div>
+  <div class="msg" id="auto-msg"></div>
+  <p class="hint" style="margin:2px 0 14px;">暂停后定时触发器会被停用（推送时间保留），<b>手动推送照常可用</b>，随时可恢复；恢复后仍按原时间推送。</p>
+
+  <div class="field">
+    <label>推送频率与时间</label>
+    <div class="cur" id="sched-cur">当前定时：未读取</div>
+    <div class="row">
+      <select id="sched-freq">
+        <option value="daily">每天</option>
+        <option value="every3">每隔 3 天</option>
+        <option value="every7">每隔 7 天</option>
+      </select>
+      <input type="time" id="sched-time" value="07:30">
+      <button id="save-sched">保存时间</button>
+    </div>
+    <p class="hint" id="auto-state-text" style="margin-top:10px;">自动推送开关状态读取中…</p>
+    <p class="hint" style="margin-bottom:0;">时间为<b>北京时间</b>，精确到分钟。每隔 3 天＝每月 1/4/7/10… 日；每隔 7 天＝每周与设置日相同的星期。保存会直接改写仓库 workflow 的 cron（需 PAT 具备 Contents 与 Workflows 写权限）；暂停状态下修改的时间在恢复后生效。</p>
+    <div class="msg" id="sched-msg"></div>
+  </div>
+</section>
+
+<section class="card">
+  <h2><span class="num">3</span>基础设置</h2>
   <p class="hint">收件邮箱与书名分别保存为仓库变量 vars.TO / vars.BOOK_TITLE；邮箱未设置时回退到 secrets.TO，书名留空并保存即恢复默认。</p>
   <div class="field">
     <label>收件邮箱</label>
@@ -49,25 +94,7 @@
 </section>
 
 <section class="card">
-  <h2><span class="num">2</span>定时设置</h2>
-  <p class="hint">设置自动推送的频率与时间。<b>暂停 / 恢复自动推送的开关在控制台首页</b>（这里只改频率与时间）；暂停状态下修改的时间会在恢复后生效。</p>
-  <div class="cur" id="sched-cur" style="margin:6px 0 10px;">当前定时：未读取</div>
-  <div class="row">
-    <select id="sched-freq">
-      <option value="daily">每天</option>
-      <option value="every3">每隔 3 天</option>
-      <option value="every7">每隔 7 天</option>
-    </select>
-    <input type="time" id="sched-time" value="07:30">
-    <button id="save-sched">保存时间</button>
-  </div>
-  <p class="hint" id="auto-state-text" style="margin-top:10px;">自动推送开关状态读取中…</p>
-  <p class="hint" style="margin-bottom:0;">时间为<b>北京时间</b>，精确到分钟。每隔 3 天＝每月 1/4/7/10… 日；每隔 7 天＝每周与设置日相同的星期。保存会直接改写仓库 workflow 的 cron（需 PAT 具备 Contents 与 Workflows 写权限）。</p>
-  <div class="msg" id="sched-msg"></div>
-</section>
-
-<section class="card">
-  <h2><span class="num">3</span>内容源</h2>
+  <h2><span class="num">4</span>内容源</h2>
   <p class="hint">自定义每日推送的 RSS 源（支持 RSSHub 路由与原生 RSS），保存为 vars.FEEDS；「恢复默认」清除自定义，回退内置的人民日报+半月谈源。源越多运行越慢，建议 ≤30 个。</p>
   <div class="hint" id="feed-status">读取中…</div>
   <div id="feed-rows"></div>

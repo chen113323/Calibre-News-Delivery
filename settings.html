@@ -25,6 +25,11 @@
 <div class="warnbar" id="settings-auth-warn">
   尚未验证令牌。请在下方「1 · 访问令牌」中输入并验证 Fine-grained PAT，之后才能读取或保存配置。令牌只存本机浏览器，控制台首页会自动沿用（同一标签页内跳转可直接沿用；新标签页打开且未勾选「长期记住」时需重新输入）。
 </div>
+<div class="warnbar" id="workflow-state-warn">
+  <span id="workflow-state-text"></span>
+  <button class="mini" id="btn-enable-workflow" style="display:none;margin-left:10px;">重新启用定时任务</button>
+</div>
+<div class="msg" id="workflow-msg"></div>
 
 <section class="card" id="sec-auth">
   <div class="collapse-head" data-toggle="sec-auth">

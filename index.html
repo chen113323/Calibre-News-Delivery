@@ -112,6 +112,15 @@ label.opt input{ accent-color:var(--primary); }
 .quicknav a:hover{ color:var(--primary); border-color:var(--primary); text-decoration:none; }
 .quicknav a.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
 section.card[id]{ scroll-margin-top:64px; }
+.collapse-head{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+.collapse-head h2{ flex:1; min-width:0; margin-bottom:0; }
+.collapse-summary{ font-size:12px; font-weight:400; color:var(--text2);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.collapse-head .arrow{ color:var(--text2); font-size:13px; transition:transform .25s; flex-shrink:0; }
+.card.collapsed .arrow{ transform:rotate(-90deg); }
+.card.collapsed .card-body{ display:none; }
+.card.collapsed{ padding:15px 20px; }
+button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
 
 .toast{ position:fixed; right:18px; bottom:18px; z-index:99; max-width:320px;
   background:var(--card); color:var(--text); border:1px solid var(--line); border-left:4px solid var(--primary);
@@ -122,6 +131,7 @@ section.card[id]{ scroll-margin-top:64px; }
 @media(max-width:520px){
   .hero{ padding:24px 16px 20px; border-radius:0 0 20px 20px; }
   .card{ padding:16px; border-radius:14px; }
+  .card.collapsed{ padding:13px 16px; }
   .feedrow .ft{ flex:1 1 100%; }
   .toast{ left:16px; right:16px; max-width:none; }
 }
@@ -152,8 +162,13 @@ section.card[id]{ scroll-margin-top:64px; }
 
 <div class="wrap">
 
-<section class="card">
-  <h2><span class="num">1</span>访问令牌</h2>
+<section class="card" id="sec-auth">
+  <div class="collapse-head" id="auth-head">
+    <h2><span class="num">1</span>访问令牌<span class="collapse-summary" id="auth-summary"> · 未设置</span></h2>
+    <button class="ghost mini" id="auth-toggle">收起</button>
+    <span class="arrow">▾</span>
+  </div>
+  <div class="card-body" id="auth-body">
   <p class="hint">创建 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained PAT</a>：仅勾选本仓库，权限 Actions(读写) + Variables(读写)，建议有效期 30–90 天。令牌保存在浏览器本机并按域名隔离，其他网站无法读取；默认仅本次会话有效，勾选下方选项才会长期记住。</p>
   <div class="row">
     <input type="password" id="token" placeholder="github_pat_…">
@@ -162,6 +177,7 @@ section.card[id]{ scroll-margin-top:64px; }
   </div>
   <label class="opt"><input type="checkbox" id="remember-token"> 在本机长期记住令牌（信任此设备时勾选）</label>
   <div class="msg" id="auth-msg"></div>
+  </div>
 </section>
 
 <section class="card" id="sec-dispatch">
@@ -191,8 +207,13 @@ section.card[id]{ scroll-margin-top:64px; }
   <div class="msg" id="title-msg"></div>
 </section>
 
-<section class="card" id="sec-feeds">
-  <h2><span class="num">4</span>RSS 源配置</h2>
+<section class="card collapsed" id="sec-feeds">
+  <div class="collapse-head" id="feeds-head">
+    <h2><span class="num">4</span>RSS 源配置<span class="collapse-summary" id="feeds-summary"> · 默认 7 个</span></h2>
+    <button class="ghost mini" id="feeds-toggle">编辑</button>
+    <span class="arrow">▾</span>
+  </div>
+  <div class="card-body" id="feeds-body">
   <p class="hint">自定义每日推送的 RSS 源（支持 RSSHub 路由与原生 RSS）。保存后下一次推送生效；「恢复默认」清除自定义，回退内置的人民日报+半月谈源。源越多运行越慢，建议 ≤30 个。</p>
   <div class="hint" id="feed-status">读取中…</div>
   <div id="feed-rows"></div>
@@ -202,6 +223,7 @@ section.card[id]{ scroll-margin-top:64px; }
     <button class="ghost" id="reset-feeds">恢复默认</button>
   </div>
   <div class="msg" id="feeds-msg"></div>
+  </div>
 </section>
 
 <section class="card" id="sec-runs">
@@ -215,6 +237,19 @@ section.card[id]{ scroll-margin-top:64px; }
 const OWNER='chen113323', REPO='Calibre-News-Delivery', WF='calibre-news.yml', BR='master';
 const TK_KEY='wml_console_token';
 const $=id=>document.getElementById(id);
+function authCollapse(on){
+  $('sec-auth').classList.toggle('collapsed',on);
+  $('auth-toggle').textContent=on?'管理':'收起';
+}
+function feedsCollapse(on){
+  $('sec-feeds').classList.toggle('collapsed',on);
+  $('feeds-toggle').textContent=on?'编辑':'收起';
+}
+function authSummary(t){ $('auth-summary').textContent=' · '+t; }
+$('auth-head').onclick=()=>authCollapse(!$('sec-auth').classList.contains('collapsed'));
+$('auth-toggle').onclick=e=>{ e.stopPropagation(); authCollapse(!$('sec-auth').classList.contains('collapsed')); };
+$('feeds-head').onclick=()=>feedsCollapse(!$('sec-feeds').classList.contains('collapsed'));
+$('feeds-toggle').onclick=e=>{ e.stopPropagation(); feedsCollapse(!$('sec-feeds').classList.contains('collapsed')); };
 let token=sessionStorage.getItem(TK_KEY)||localStorage.getItem(TK_KEY)||'';
 $('token').value=token;
 $('remember-token').checked=!!localStorage.getItem(TK_KEY);
@@ -313,6 +348,8 @@ function renderFeeds(arr,custom){
   arr.forEach(p=>box.appendChild(feedRow(p[0],p[1])));
   $('feed-status').textContent=custom?('自定义源 · '+arr.length+' 个'):('内置默认源 · '+arr.length+' 个');
   $('chip-feeds').textContent='源：'+(custom?'自定义 ':'默认 ')+arr.length+' 个';
+  $('feeds-summary').textContent=' · '+(custom?'自定义 ':'默认 ')+arr.length+' 个';
+  $('feeds-summary').title=arr.map(x=>x[0]).join('、');
 }
 async function loadFeeds(){
   if(!token){ renderFeeds(DEFAULT_FEEDS,false); $('feed-status').textContent='输入令牌后可读取与保存自定义源（已载入默认源）'; return; }
@@ -339,18 +376,21 @@ $('save-token').onclick=async()=>{
     if($('remember-token').checked){ localStorage.setItem(TK_KEY,token); sessionStorage.removeItem(TK_KEY); }
     else { sessionStorage.setItem(TK_KEY,token); localStorage.removeItem(TK_KEY); }
     setMsg('auth-msg','令牌有效，已保存'+($('remember-token').checked?'（本机长期）':'（仅本次会话）'),'ok');
+    authSummary('有效'+($('remember-token').checked?'（长期记住）':'（仅本次会话）'));
+    authCollapse(true);
     toast('令牌验证通过','ok');
     loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
     loadVar().catch(()=>{});
     loadTitle().catch(()=>{});
     loadFeeds().catch(()=>{});
-  }catch(e){ setMsg('auth-msg',e.message,'bad'); toast(e.message,'bad'); }
+  }catch(e){ setMsg('auth-msg',e.message,'bad'); toast(e.message,'bad'); authSummary('验证失败，请检查'); authCollapse(false); }
   unbusy(btn);
 };
 $('clear-token').onclick=()=>{
   sessionStorage.removeItem(TK_KEY); localStorage.removeItem(TK_KEY);
   token=''; $('token').value=''; $('remember-token').checked=false;
   setMsg('auth-msg','已清除本机保存的令牌','warn');
+  authSummary('未设置'); authCollapse(false);
   toast('令牌已清除','warn');
 };
 
@@ -453,6 +493,8 @@ $('save-feeds').onclick=async()=>{
     toast('RSS 源已保存（'+arr.length+' 个）','ok');
     $('feed-status').textContent='自定义源 · '+arr.length+' 个';
     $('chip-feeds').textContent='源：自定义 '+arr.length+' 个';
+    $('feeds-summary').textContent=' · 自定义 '+arr.length+' 个';
+    feedsCollapse(true);
   }catch(e){ setMsg('feeds-msg','保存失败：'+e.message,'bad'); }
   unbusy(btn);
 };
@@ -464,19 +506,28 @@ $('reset-feeds').onclick=async()=>{
     toast('已恢复默认源','warn');
   }catch(e){ setMsg('feeds-msg','清除失败：'+e.message,'bad'); }
   renderFeeds(DEFAULT_FEEDS,false);
+  feedsCollapse(true);
 };
 
 $('runs').innerHTML='<li style="border:0;display:block;"><div class="skeleton"></div><div class="skeleton" style="width:75%;"></div><div class="skeleton" style="width:50%;"></div></li>';
 if(token){
+  authSummary('验证中…'); authCollapse(true);
   setMsg('auth-msg','已从本机读取令牌，正在验证…');
   api('/repos/'+OWNER+'/'+REPO).then(()=>{
     setMsg('auth-msg','令牌有效','ok');
+    authSummary('有效'+(localStorage.getItem(TK_KEY)?'（长期记住）':'（仅本次会话）'));
+    authCollapse(true);
     loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
     loadVar().catch(()=>{});
     loadTitle().catch(()=>{});
     loadFeeds().catch(()=>{});
-  }).catch(e=>setMsg('auth-msg','已保存的令牌不可用：'+e.message,'bad'));
+  }).catch(e=>{
+    setMsg('auth-msg','已保存的令牌不可用：'+e.message,'bad');
+    authSummary('已过期，请重新输入'); authCollapse(false);
+    toast('令牌不可用：'+e.message,'bad');
+  });
 }else{
+  authSummary('未设置'); authCollapse(false);
   loadFeeds().catch(()=>{});
   $('runs').innerHTML='<li style="color:var(--text2);border:0;">输入令牌后加载运行记录</li>';
 }
@@ -484,7 +535,9 @@ if(token){
 document.querySelectorAll('.quicknav a').forEach(a=>{
   a.addEventListener('click',e=>{
     e.preventDefault();
-    const t=document.querySelector(a.getAttribute('href'));
+    const href=a.getAttribute('href');
+    if(href==='#sec-feeds') feedsCollapse(false);
+    const t=document.querySelector(href);
     if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
   });
 });

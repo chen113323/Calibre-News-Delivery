@@ -330,14 +330,14 @@ async function loadWorkflowState(){
   renderWorkflowState();
   return state.workflowState;
 }
-async function enableAllWorkflows(){
+/* 只启用业务主工作流；Keepalive 完全独立，不在本控制台的任何逻辑中出现 */
+async function enableMainWorkflow(){
   await api(WF_API+'/enable',{method:'PUT'});
-  try{ await api(REPO_API+'/actions/workflows/keepalive.yml/enable',{method:'PUT'}); }catch(e){}
 }
 async function ensureWorkflowEnabled(){
   var d=await api(WF_API);
   if(d.state!=='active'){
-    await enableAllWorkflows();
+    await enableMainWorkflow();
     state.workflowState='active';
     renderWorkflowState();
     return true;
@@ -350,9 +350,9 @@ async function enableWorkflow(){
   if(!state.verified){ setMsg('workflow-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
   var btn=$('btn-enable-workflow'); busy(btn,'启用中…');
   try{
-    await enableAllWorkflows();
+    await enableMainWorkflow();
     await loadWorkflowState();
-    setMsg('workflow-msg','已重新启用 ✓ 定时推送恢复；保留 keepalive 工作流可避免再次被自动禁用。','ok');
+    setMsg('workflow-msg','已重新启用 ✓ 定时推送恢复。手动推送始终可用，与本开关无关。','ok');
     toast('定时任务已重新启用','ok');
   }catch(e){
     setMsg('workflow-msg','启用失败：'+e.message+'（需要 PAT 具备 Actions 写权限）','bad');

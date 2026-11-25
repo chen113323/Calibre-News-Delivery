@@ -60,20 +60,27 @@ function b64decode(b64){
   var bytes=Uint8Array.from(bin,function(c){ return c.charCodeAt(0); });
   return new TextDecoder().decode(bytes);
 }
-function applyTheme(t){ document.documentElement.dataset.theme=t; localStorage.setItem('wml_theme',t); }
+/* 隐私模式下存储访问可能抛异常，统一降级为「无存储」而不阻断页面 */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+function ssGet(k){ try{ return sessionStorage.getItem(k); }catch(e){ return null; } }
+function ssSet(k,v){ try{ sessionStorage.setItem(k,v); }catch(e){} }
+function ssDel(k){ try{ sessionStorage.removeItem(k); }catch(e){} }
+function applyTheme(t){ document.documentElement.dataset.theme=t; lsSet('wml_theme',t); }
 
 /* ========== 令牌存储（不落 DOM、不回显） ========== */
 function readStoredToken(){
-  var s=sessionStorage.getItem(TK_KEY), l=localStorage.getItem(TK_KEY);
+  var s=ssGet(TK_KEY), l=lsGet(TK_KEY);
   state.persist=!!l;
   return s||l||'';
 }
 function storeToken(t,persist){
-  if(persist){ localStorage.setItem(TK_KEY,t); sessionStorage.removeItem(TK_KEY); }
-  else{ sessionStorage.setItem(TK_KEY,t); localStorage.removeItem(TK_KEY); }
+  if(persist){ lsSet(TK_KEY,t); ssDel(TK_KEY); }
+  else{ ssSet(TK_KEY,t); lsDel(TK_KEY); }
   state.persist=persist;
 }
-function wipeToken(){ sessionStorage.removeItem(TK_KEY); localStorage.removeItem(TK_KEY); }
+function wipeToken(){ ssDel(TK_KEY); lsDel(TK_KEY); }
 
 /* ========== GitHub API 封装 ========== */
 async function api(path,opts,allow404){
@@ -219,7 +226,12 @@ function renderSchedule(){
     $('btn-auto').textContent=sch.paused?'恢复自动推送':'暂停自动推送';
     $('btn-auto').className=sch.paused?'':'danger';
   }
-  if($('hero-dot')&&sch.paused&&state.verified){ $('hero-dot').className='dot pause'; }
+  if(state.page==='settings'&&state.verified&&$('hero-status')){
+    $('hero-status').textContent=sch.paused?'自动推送已暂停':'定时 '+scheduleText(sch,true);
+    var hd=$('hero-dot');
+    if(hd){ hd.className=sch.paused?'dot pause':'dot ok'; }
+  }
+  if(state.page==='home'&&$('hero-dot')&&sch.paused&&state.verified){ $('hero-dot').className='dot pause'; }
 }
 async function loadSchedule(){
   var f=await getWorkflow(), st=parseScheduleState(f.text), sch=parseCron(st.cronExpr);
@@ -312,7 +324,6 @@ function renderFeeds(arr,custom){
   box.innerHTML='';
   arr.forEach(function(p){ box.appendChild(feedRow(p[0],p[1])); });
   if($('feed-status')){ $('feed-status').textContent=custom?('自定义源 · '+arr.length+' 个'):('内置默认源 · '+arr.length+' 个'); }
-  if($('chip-feeds')){ $('chip-feeds').textContent='源：'+(custom?'自定义 ':'默认 ')+arr.length+' 个'; }
 }
 async function loadFeeds(){
   if(!state.verified){ renderFeeds(DEFAULT_FEEDS,false); return; }
@@ -410,13 +421,13 @@ function renderRuns(){
     sum+=' · 最近'+(latest.conclusion==='success'?'成功':latest.conclusion==='failure'?'失败':latest.status==='completed'?'结束':'进行中')+' '+fmtTime(latest.created_at);
   }
   if($('runs-summary')){ $('runs-summary').textContent=' · '+sum; }
-  state.runningRun=state.runs.filter(function(r){ return r.status!=='completed'; })[0]||null;
   renderStopbar(); updateHero();
 }
 async function loadRuns(){
-  if(!state.verified){ renderRuns(); return; }
+  if(!state.verified){ state.runs=[]; state.runningRun=null; renderRuns(); return; }
   var data=await api(RUNS_ALL);
   state.runs=data.workflow_runs||[];
+  state.runningRun=state.runs.filter(function(r){ return r.status!=='completed'; })[0]||null;
   renderRuns();
 }
 function updateHero(){
@@ -427,7 +438,7 @@ function updateHero(){
   if(!latest){ st.textContent=state.schedule&&state.schedule.paused?'自动推送已暂停 · 暂无运行记录':'暂无运行记录'; return; }
   if(latest.status==='in_progress'){ dot.className='dot run'; st.textContent='正在推送…'; }
   else if(latest.conclusion==='success'){ if(!state.schedule||!state.schedule.paused) dot.className='dot ok'; st.textContent='最近推送成功 · '+fmtTime(latest.created_at); }
-  else if(latest.conclusion==='cancelled'){ dot.className='dot'; st.textContent='最近一次已取消 · '+fmtTime(latest.created_at); }
+  else if(latest.conclusion==='cancelled'){ if(!state.schedule||!state.schedule.paused) dot.className='dot'; st.textContent='最近一次已取消 · '+fmtTime(latest.created_at); }
   else if(latest.conclusion){ if(!state.schedule||!state.schedule.paused) dot.className='dot bad'; st.textContent='最近推送'+(latest.conclusion==='failure'?'失败':'异常')+' · '+fmtTime(latest.created_at); }
 }
 function renderStopbar(){
@@ -480,10 +491,10 @@ function pollNewRun(start){
     if(n>40){ clearInterval(timer); }
   },15000);
 }
-async function cancelRun(id){
+async function cancelRun(id,srcBtn){
   if(!state.verified){ setMsg('dispatch-msg','请先到「配置」页保存并验证令牌','bad'); return; }
   if(!confirm('确定取消 run #'+id+' 这「一次」运行吗？\n这不会暂停自动推送；若已进入发送步骤，邮件可能已发出。')) return;
-  var btn=$('btn-stop'); busy(btn,'取消中…');
+  var btn=srcBtn||$('btn-stop'); busy(btn,'取消中…');
   setMsg('dispatch-msg','正在请求取消 run #'+id+' …','warn');
   try{
     await api('/repos/'+OWNER+'/'+REPO+'/actions/runs/'+id+'/cancel',{method:'POST'});
@@ -537,6 +548,7 @@ async function refreshAll(){
       if($('chip-sched')) $('chip-sched').textContent=state.page==='home'?'自动：未读取':'定时：未读取';
     }));
   }else{
+    jobs.push(loadRuns().catch(function(){}));
     jobs.push(loadEmail().catch(function(e){ if($('cur-email')) $('cur-email').textContent='当前邮箱：读取失败（'+e.message+'）'; }));
     jobs.push(loadTitle().catch(function(e){ if($('cur-title')) $('cur-title').textContent='当前书名：读取失败（'+e.message+'）'; }));
     jobs.push(loadSchedule().catch(function(e){
@@ -584,7 +596,9 @@ function updateNavActive(){
     if(el&&el.offsetTop<=pos){ current=NAV_IDS[i]; }
   }
   var doc=document.documentElement;
-  if(window.scrollY+window.innerHeight>=doc.scrollHeight-8){ current=NAV_IDS[NAV_IDS.length-1]; }
+  if(doc.scrollHeight>window.innerHeight+40&&window.scrollY+window.innerHeight>=doc.scrollHeight-8){
+    current=NAV_IDS[NAV_IDS.length-1];
+  }
   setNavActive(current);
 }
 function initNav(){
@@ -612,7 +626,7 @@ function initNav(){
 
 /* ========== 公共初始化 ========== */
 function initCommon(){
-  applyTheme(localStorage.getItem('wml_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+  applyTheme(lsGet('wml_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
   if($('theme-toggle')){
     $('theme-toggle').addEventListener('click',function(){
       applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
@@ -668,7 +682,7 @@ async function initHome(){
   if($('btn-dispatch')){ $('btn-dispatch').addEventListener('click',dispatch); }
   if($('btn-stop')){
     $('btn-stop').addEventListener('click',function(){
-      if(state.runningRun){ cancelRun(state.runningRun.id); }
+      if(state.runningRun){ cancelRun(state.runningRun.id,$('btn-stop')); }
       else{ setMsg('dispatch-msg','当前没有正在进行的推送','warn'); }
     });
   }
@@ -682,7 +696,7 @@ async function initHome(){
   if($('runs')){
     $('runs').addEventListener('click',function(e){
       var b=e.target.closest('[data-stop]');
-      if(b){ cancelRun(parseInt(b.getAttribute('data-stop'),10)); }
+      if(b){ cancelRun(parseInt(b.getAttribute('data-stop'),10),b); }
     });
   }
   if($('run-range')){

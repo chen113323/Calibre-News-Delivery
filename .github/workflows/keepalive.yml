@@ -16,7 +16,7 @@ run-name: 'Keepalive: 仓库活动心跳'
 #  4. 手动触发默认只做检查（dry-run），传 force=true 才真正提交，避免测试污染仓库。
 on:
   schedule:
-    - cron: '7 10 * * *'   # 每天 UTC 04:23（北京 12:23），避开整点高峰；仅做检查
+    - cron: '23 4 * * *'   # 每天 UTC 04:23（北京 12:23），避开整点高峰；仅做检查
   workflow_dispatch:
     inputs:
       force:

@@ -330,7 +330,7 @@ async function loadWorkflowState(){
   renderWorkflowState();
   return state.workflowState;
 }
-/* 只启用业务主工作流；Keepalive 完全独立，不在本控制台的任何逻辑中出现 */
+/* 只启用业务主工作流；仓库保活由独立工作流自行维护，不在本控制台逻辑中出现 */
 async function enableMainWorkflow(){
   await api(WF_API+'/enable',{method:'PUT'});
 }

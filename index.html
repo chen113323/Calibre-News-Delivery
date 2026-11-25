@@ -45,18 +45,21 @@ body{ font-family:-apple-system,"PingFang SC","Microsoft YaHei","Segoe UI",sans-
 .theme-btn:hover{ background:rgba(255,255,255,.3); }
 
 .card{ background:var(--card); border:1px solid var(--line); border-radius:16px;
-  padding:20px; margin:14px 0; box-shadow:var(--shadow); transition:box-shadow .25s,transform .25s; }
+  padding:20px; margin:14px 0; box-shadow:var(--shadow); transition:box-shadow .25s; }
 .card:hover{ box-shadow:var(--shadow-h); }
 .card h2{ font-size:15px; font-weight:600; margin-bottom:4px; display:flex; align-items:center; gap:9px; }
 .num{ background:var(--primary); color:#fff; width:23px; height:23px; border-radius:8px;
   font-size:12.5px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
 .hint{ color:var(--text2); font-size:12.5px; margin:4px 0 12px; }
 .hint a{ color:var(--primary); }
-.row{ display:flex; gap:8px; flex-wrap:wrap; }
-input[type=text],input[type=password],input[type=email]{
-  flex:1 1 190px; border:1px solid var(--line); background:var(--input-bg); color:var(--text);
-  border-radius:10px; padding:10px 13px; font-size:14px; min-width:0; transition:border .2s,box-shadow .2s; }
-input:focus{ outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
+.row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+input[type=text],input[type=password],input[type=email],input[type=time],select{
+  flex:1 1 170px; border:1px solid var(--line); background:var(--input-bg); color:var(--text);
+  border-radius:10px; padding:10px 13px; font-size:14px; min-width:0;
+  font-family:inherit; transition:border .2s,box-shadow .2s; }
+input[type=time]{ flex:0 1 130px; }
+select{ flex:0 1 auto; cursor:pointer; }
+input:focus,select:focus{ outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.15); }
 button{ border:0; border-radius:10px; background:var(--primary); color:#fff; font-size:13.5px;
   padding:10px 19px; cursor:pointer; white-space:nowrap; font-weight:500;
   transition:background .15s,transform .1s; }
@@ -67,9 +70,26 @@ button.ghost{ background:transparent; color:var(--text2); border:1px solid var(-
 button.ghost:hover{ background:var(--chip); color:var(--text); }
 button.danger{ background:transparent; color:var(--bad); border:1px solid var(--line); }
 button.danger:hover{ background:rgba(220,38,38,.08); border-color:var(--bad); }
+button.solid-danger{ background:var(--bad); }
+button.solid-danger:hover{ background:#b91c1c; }
 
 .msg{ font-size:13px; margin-top:10px; min-height:18px; }
 .msg.ok{ color:var(--ok); } .msg.bad{ color:var(--bad); } .msg.warn{ color:var(--warn); }
+
+.field{ padding:12px 0; border-top:1px solid var(--line); }
+.field:first-child{ border-top:0; padding-top:0; }
+.field>label{ display:block; font-size:13px; font-weight:500; margin-bottom:6px; }
+.field .cur{ font-size:12.5px; color:var(--text2); margin-bottom:8px; word-break:break-all; }
+
+.collapse-head{ display:flex; align-items:center; gap:10px; cursor:pointer; }
+.collapse-head h2{ flex:1; min-width:0; margin-bottom:0; }
+.collapse-summary{ font-size:12px; font-weight:400; color:var(--text2);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.collapse-head .arrow{ color:var(--text2); font-size:13px; transition:transform .25s; flex-shrink:0; }
+.card.collapsed .arrow{ transform:rotate(-90deg); }
+.card.collapsed .card-body{ display:none; }
+.card.collapsed{ padding:15px 20px; }
+button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
 
 .feedrow{ display:flex; gap:7px; margin-bottom:7px; align-items:center; }
 .feedrow input{ flex:1 1 110px; border:1px solid var(--line); background:var(--input-bg); color:var(--text);
@@ -77,7 +97,7 @@ button.danger:hover{ background:rgba(220,38,38,.08); border-color:var(--bad); }
 .feedrow input:focus{ outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.13); }
 .feedrow .ft{ flex:0 0 126px; }
 .feedrow .fx{ background:transparent; color:var(--bad); border:1px solid var(--line);
-  padding:7px 12px; font-size:15px; flex-shrink:0; border-radius:9px; }
+  padding:7px 12px; font-size:15px; flex-shrink:0; border-radius:9px; cursor:pointer; }
 .feedrow .fx:hover{ background:rgba(220,38,38,.08); border-color:var(--bad); }
 
 ul.runs{ list-style:none; padding:0; }
@@ -111,16 +131,20 @@ label.opt input{ accent-color:var(--primary); }
   text-decoration:none; white-space:nowrap; transition:all .2s; }
 .quicknav a:hover{ color:var(--primary); border-color:var(--primary); text-decoration:none; }
 .quicknav a.active{ background:var(--primary); border-color:var(--primary); color:#fff; }
-section.card[id]{ scroll-margin-top:64px; }
-.collapse-head{ display:flex; align-items:center; gap:10px; cursor:pointer; }
-.collapse-head h2{ flex:1; min-width:0; margin-bottom:0; }
-.collapse-summary{ font-size:12px; font-weight:400; color:var(--text2);
-  overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-.collapse-head .arrow{ color:var(--text2); font-size:13px; transition:transform .25s; flex-shrink:0; }
-.card.collapsed .arrow{ transform:rotate(-90deg); }
-.card.collapsed .card-body{ display:none; }
-.card.collapsed{ padding:15px 20px; }
-button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
+section.card[id]{ scroll-margin-top:70px; }
+
+.stopbar{ display:none; margin-top:14px; padding:12px 14px; border-radius:12px;
+  border:1px solid var(--warn); background:rgba(217,119,6,.08);
+  font-size:13px; align-items:center; gap:10px; flex-wrap:wrap; }
+.stopbar.show{ display:flex; }
+.stopbar .txt{ flex:1 1 200px; min-width:0; }
+details.adv{ margin-top:12px; }
+details.adv summary{ cursor:pointer; font-size:12.5px; color:var(--text2); user-select:none; }
+details.adv summary:hover{ color:var(--primary); }
+details.adv .adv-body{ margin-top:10px; }
+.runbar{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:6px; }
+.runbar .scope{ font-size:12.5px; color:var(--text2); flex:1 1 100%; }
+.empty{ color:var(--text2); font-size:13px; padding:8px 0; }
 
 .toast{ position:fixed; right:18px; bottom:18px; z-index:99; max-width:320px;
   background:var(--card); color:var(--text); border:1px solid var(--line); border-left:4px solid var(--primary);
@@ -134,6 +158,7 @@ button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
   .card.collapsed{ padding:13px 16px; }
   .feedrow .ft{ flex:1 1 100%; }
   .toast{ left:16px; right:16px; max-width:none; }
+  input[type=time]{ flex:1 1 120px; }
 }
 @media(min-width:900px){
   .wrap{ max-width:960px; }
@@ -148,11 +173,12 @@ button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
   <div class="wrap">
     <button class="theme-btn" id="theme-toggle" title="切换深浅主题">◐</button>
     <h1><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Kindle 推送控制台</h1>
-    <div class="sub"><a href="https://github.com/chen113323/Calibre-News-Delivery" target="_blank" rel="noopener">chen113323 / Calibre-News-Delivery</a> · 每日北京时间 07:30 自动推送</div>
+    <div class="sub"><a href="https://github.com/chen113323/Calibre-News-Delivery" target="_blank" rel="noopener">chen113323 / Calibre-News-Delivery</a> · 定时推送以「3 · 推送设置」中的时间为准</div>
     <div class="chips">
       <span class="chip"><span class="dot" id="hero-dot"></span><span id="hero-status">未验证</span></span>
       <span class="chip" id="chip-title">书名：—</span>
       <span class="chip" id="chip-feeds">源：—</span>
+      <span class="chip" id="chip-sched">定时：—</span>
     </div>
   </div>
 </div>
@@ -160,7 +186,7 @@ button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
 <nav class="quicknav">
   <div class="wrap">
     <a href="#sec-dispatch">推送</a>
-    <a href="#sec-config">邮箱书名</a>
+    <a href="#sec-config">推送设置</a>
     <a href="#sec-feeds">RSS 源</a>
     <a href="#sec-runs">运行</a>
   </div>
@@ -169,170 +195,143 @@ button.mini{ padding:5px 13px; font-size:12px; flex-shrink:0; }
 <div class="wrap">
 
 <section class="card" id="sec-auth">
-  <div class="collapse-head" id="auth-head">
+  <div class="collapse-head" data-toggle="sec-auth">
     <h2><span class="num">1</span>访问令牌<span class="collapse-summary" id="auth-summary"> · 未设置</span></h2>
-    <button class="ghost mini" id="auth-toggle">收起</button>
+    <button class="ghost mini" data-btn="sec-auth">收起</button>
     <span class="arrow">▾</span>
   </div>
-  <div class="card-body" id="auth-body">
-  <p class="hint">创建 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained PAT</a>：仅勾选本仓库，权限 Actions(读写) + Variables(读写)，建议有效期 30–90 天。令牌保存在浏览器本机并按域名隔离，其他网站无法读取；默认仅本次会话有效，勾选下方选项才会长期记住。</p>
-  <div class="row">
-    <input type="password" id="token" placeholder="github_pat_…">
-    <button id="save-token">保存并验证</button>
-    <button class="danger" id="clear-token">清除</button>
-  </div>
-  <label class="opt"><input type="checkbox" id="remember-token"> 在本机长期记住令牌（信任此设备时勾选）</label>
-  <div class="msg" id="auth-msg"></div>
+  <div class="card-body">
+    <p class="hint">创建 <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">Fine-grained PAT</a>，仅授权本仓库，勾选：<b>Actions(读写)</b>、<b>Variables(读写)</b>、<b>Contents(读写)</b>、<b>Workflows(读写)</b>（后两项用于修改推送时间），建议有效期 30–90 天。令牌只存本机浏览器、按域名隔离；<b>输入后不回显、不写入页面、不出现在任何提示或日志中</b>。默认仅本次会话有效。</p>
+    <div class="row">
+      <input type="password" id="token" placeholder="github_pat_…" autocomplete="new-password" spellcheck="false">
+      <button id="save-token">保存并验证</button>
+      <button class="danger" id="clear-token">清除</button>
+    </div>
+    <label class="opt"><input type="checkbox" id="remember-token"> 在本机长期记住令牌（信任此设备时勾选）</label>
+    <div class="msg" id="auth-msg"></div>
   </div>
 </section>
 
 <section class="card" id="sec-dispatch">
   <h2><span class="num">2</span>手动推送</h2>
-  <p class="hint">立即触发完整流程：抓取 RSS → 生成 EPUB → 发送到 Kindle（约 2–5 分钟，下方「最近运行」自动实时更新）。</p>
+  <p class="hint">立即触发完整流程：抓取 RSS → 生成 EPUB → 发送到 Kindle（约 2–5 分钟）。手动推送不受「每隔几天」周期限制。</p>
   <div class="row">
-    <input type="email" id="temp-email" placeholder="临时收件邮箱（可选，留空用已配置邮箱）">
     <button id="btn-dispatch">立即推送</button>
+    <button class="ghost" id="btn-refresh">刷新状态</button>
+  </div>
+  <details class="adv" id="adv-email">
+    <summary>高级选项：本次使用临时收件邮箱（可选）</summary>
+    <div class="adv-body">
+      <div class="row">
+        <input type="email" id="temp-email" placeholder="临时收件邮箱，仅本次推送生效">
+      </div>
+      <p class="hint" style="margin-bottom:0;">留空则使用「3 · 推送设置」里的默认邮箱；临时邮箱不会改变默认配置，也不会被保存。</p>
+    </div>
+  </details>
+  <div class="stopbar" id="stopbar">
+    <span class="txt" id="stopbar-text">检测到有推送正在进行</span>
+    <button class="solid-danger mini" id="btn-stop">停止推送</button>
   </div>
   <div class="msg" id="dispatch-msg"></div>
 </section>
 
-<section class="card" id="sec-config">
-  <h2><span class="num">3</span>收件邮箱与书名</h2>
-  <p class="hint">邮箱存为 vars.TO（未设置回退 secrets.TO）；书名存为 vars.BOOK_TITLE，输入留空并保存即恢复默认。均在下一次推送生效。</p>
-  <div class="hint" id="cur-email">当前邮箱：未读取</div>
-  <div class="row">
-    <input type="email" id="new-email" placeholder="收件邮箱，如 yourname@kindle.cn">
-    <button id="save-email">保存邮箱</button>
+<section class="card collapsed" id="sec-config">
+  <div class="collapse-head" data-toggle="sec-config">
+    <h2><span class="num">3</span>推送设置<span class="collapse-summary" id="config-summary"> · 读取中…</span></h2>
+    <button class="ghost mini" data-btn="sec-config">编辑</button>
+    <span class="arrow">▾</span>
   </div>
-  <div class="msg" id="email-msg"></div>
-  <div class="hint" id="cur-title" style="margin-top:14px;">当前书名：未读取</div>
-  <div class="row">
-    <input type="text" id="new-title" placeholder="书名，如 我的早报（留空并保存=恢复默认）">
-    <button id="save-title">保存书名</button>
+  <div class="card-body">
+    <div class="field">
+      <label>收件邮箱</label>
+      <div class="cur" id="cur-email">当前邮箱：未读取</div>
+      <div class="row">
+        <input type="email" id="new-email" placeholder="收件邮箱，如 yourname@kindle.cn">
+        <button id="save-email">保存邮箱</button>
+      </div>
+      <div class="msg" id="email-msg"></div>
+    </div>
+    <div class="field">
+      <label>书名</label>
+      <div class="cur" id="cur-title">当前书名：未读取</div>
+      <div class="row">
+        <input type="text" id="new-title" placeholder="书名，如 我的早报（留空并保存=恢复默认）">
+        <button id="save-title">保存书名</button>
+      </div>
+      <div class="msg" id="title-msg"></div>
+    </div>
+    <div class="field">
+      <label>推送时间</label>
+      <div class="cur" id="sched-cur">当前定时：未读取</div>
+      <div class="row">
+        <select id="sched-freq">
+          <option value="daily">每天</option>
+          <option value="every3">每隔 3 天</option>
+          <option value="every7">每隔 7 天</option>
+        </select>
+        <input type="time" id="sched-time" value="07:30">
+        <button id="save-sched">保存时间</button>
+      </div>
+      <p class="hint" style="margin-bottom:0;">时间为<b>北京时间</b>，精确到分钟。每隔 3 天＝每月 1/4/7/10… 日；每隔 7 天＝每周与设置日相同的星期。保存会直接改写仓库 workflow 的 cron（需 Contents 与 Workflows 写权限），下一次推送起生效。</p>
+      <div class="msg" id="sched-msg"></div>
+    </div>
   </div>
-  <div class="msg" id="title-msg"></div>
 </section>
 
 <section class="card collapsed" id="sec-feeds">
-  <div class="collapse-head" id="feeds-head">
+  <div class="collapse-head" data-toggle="sec-feeds">
     <h2><span class="num">4</span>RSS 源配置<span class="collapse-summary" id="feeds-summary"> · 默认 7 个</span></h2>
-    <button class="ghost mini" id="feeds-toggle">编辑</button>
+    <button class="ghost mini" data-btn="sec-feeds">编辑</button>
     <span class="arrow">▾</span>
   </div>
-  <div class="card-body" id="feeds-body">
-  <p class="hint">自定义每日推送的 RSS 源（支持 RSSHub 路由与原生 RSS）。保存后下一次推送生效；「恢复默认」清除自定义，回退内置的人民日报+半月谈源。源越多运行越慢，建议 ≤30 个。</p>
-  <div class="hint" id="feed-status">读取中…</div>
-  <div id="feed-rows"></div>
-  <div class="row" style="margin-top:12px;">
-    <button class="ghost" id="add-feed">＋ 添加一行</button>
-    <button id="save-feeds">保存源列表</button>
-    <button class="ghost" id="reset-feeds">恢复默认</button>
-  </div>
-  <div class="msg" id="feeds-msg"></div>
+  <div class="card-body">
+    <p class="hint">自定义每日推送的 RSS 源（支持 RSSHub 路由与原生 RSS），保存后下一次推送生效；「恢复默认」清除自定义，回退内置的人民日报+半月谈源。源越多运行越慢，建议 ≤30 个。</p>
+    <div class="hint" id="feed-status">读取中…</div>
+    <div id="feed-rows"></div>
+    <div class="row" style="margin-top:12px;">
+      <button class="ghost" id="add-feed">＋ 添加一行</button>
+      <button id="save-feeds">保存源列表</button>
+      <button class="ghost" id="reset-feeds">恢复默认</button>
+    </div>
+    <div class="msg" id="feeds-msg"></div>
   </div>
 </section>
 
 <section class="card" id="sec-runs">
-  <h2><span class="num">5</span>最近运行</h2>
-  <ul class="runs" id="runs"></ul>
+  <div class="collapse-head" data-toggle="sec-runs">
+    <h2><span class="num">5</span>最近运行<span class="collapse-summary" id="runs-summary"> · 读取中…</span></h2>
+    <button class="ghost mini" data-btn="sec-runs">收起</button>
+    <span class="arrow">▾</span>
+  </div>
+  <div class="card-body">
+    <div class="runbar">
+      <select id="run-range">
+        <option value="1">最近 24 小时</option>
+        <option value="3">最近 3 天</option>
+        <option value="7" selected>最近 7 天</option>
+        <option value="30">最近 30 天</option>
+        <option value="0">全部记录</option>
+      </select>
+      <button class="ghost mini" id="runs-refresh">刷新</button>
+      <div class="scope" id="run-scope">时间范围：读取中…</div>
+    </div>
+    <ul class="runs" id="runs"></ul>
+  </div>
 </section>
 
 </div>
 
 <script>
-const OWNER='chen113323', REPO='Calibre-News-Delivery', WF='calibre-news.yml', BR='master';
-const TK_KEY='wml_console_token';
-const $=id=>document.getElementById(id);
-function authCollapse(on){
-  $('sec-auth').classList.toggle('collapsed',on);
-  $('auth-toggle').textContent=on?'管理':'收起';
-}
-function feedsCollapse(on){
-  $('sec-feeds').classList.toggle('collapsed',on);
-  $('feeds-toggle').textContent=on?'编辑':'收起';
-}
-function authSummary(t){ $('auth-summary').textContent=' · '+t; }
-$('auth-head').onclick=()=>authCollapse(!$('sec-auth').classList.contains('collapsed'));
-$('auth-toggle').onclick=e=>{ e.stopPropagation(); authCollapse(!$('sec-auth').classList.contains('collapsed')); };
-$('feeds-head').onclick=()=>feedsCollapse(!$('sec-feeds').classList.contains('collapsed'));
-$('feeds-toggle').onclick=e=>{ e.stopPropagation(); feedsCollapse(!$('sec-feeds').classList.contains('collapsed')); };
-let token=sessionStorage.getItem(TK_KEY)||localStorage.getItem(TK_KEY)||'';
-$('token').value=token;
-$('remember-token').checked=!!localStorage.getItem(TK_KEY);
+(function(){
+'use strict';
 
-function applyTheme(t){ document.documentElement.dataset.theme=t; localStorage.setItem('wml_theme',t); }
-applyTheme(localStorage.getItem('wml_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
-$('theme-toggle').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
-
-function toast(text,type){
-  const t=document.createElement('div'); t.className='toast t-'+(type||'');
-  t.textContent=text; document.body.appendChild(t);
-  requestAnimationFrame(()=>t.classList.add('show'));
-  setTimeout(()=>{ t.classList.remove('show'); setTimeout(()=>t.remove(),320); },3600);
-}
-function setMsg(id,text,cls){ const el=$(id); el.textContent=text; el.className='msg '+(cls||''); }
-function busy(btn,txt){ btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent=txt; }
-function unbusy(btn){ btn.disabled=false; if(btn.dataset.old) btn.textContent=btn.dataset.old; }
-
-async function api(path,opts={},allow404=false){
-  const r=await fetch('https://api.github.com'+path,Object.assign({
-    headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json' }
-  },opts));
-  if(r.status===401) throw new Error('令牌无效或已过期');
-  if(r.status===404){
-    if(allow404) return null;
-    throw new Error('资源不存在（或 PAT 缺少 Variables 权限）');
-  }
-  if(r.status===403) throw new Error('权限不足：请确认 PAT 已勾选 Actions(读写)'+(path.includes('/variables')?' 与 Variables(读写)':'')+'，且仅授权本仓库');
-  if(!r.ok) throw new Error('GitHub API 错误 HTTP '+r.status);
-  return r.status===204?null:r.json();
-}
-function badge(st,con){
-  if(con==='success') return '<span class="badge b-ok">成功</span>';
-  if(con==='failure'||con==='timed_out') return '<span class="badge b-bad">失败</span>';
-  if(con==='cancelled'||con==='skipped') return '<span class="badge b-skip">跳过</span>';
-  if(st==='in_progress') return '<span class="badge b-run">运行中</span>';
-  return '<span class="badge b-wait">排队中</span>';
-}
-const evName=e=>e==='schedule'?'定时':'手动';
-const fmtTime=s=>new Date(s).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
-
-let latestRun=null;
-async function loadRuns(){
-  const data=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs?per_page=10');
-  const list=$('runs'); list.innerHTML='';
-  if(!data.workflow_runs.length){
-    list.innerHTML='<li style="color:var(--text2);border:0;">暂无运行记录</li>';
-  } else for(const r of data.workflow_runs){
-    const li=document.createElement('li');
-    li.innerHTML=badge(r.status,r.conclusion)+'<span>'+evName(r.event)+'</span><span class="r-time">'+fmtTime(r.created_at)+'</span><a href="'+r.html_url+'" target="_blank" rel="noopener">详情</a><div class="r-name" title="'+(r.display_title||r.name||'')+'"></div>';
-    li.querySelector('.r-name').textContent=r.display_title||r.name||'';
-    list.appendChild(li);
-  }
-  latestRun=data.workflow_runs[0]||null;
-  updateHero();
-}
-function updateHero(){
-  const dot=$('hero-dot'), st=$('hero-status');
-  if(!latestRun){ st.textContent='暂无运行'; return; }
-  if(latestRun.status==='in_progress'){ dot.className='dot run'; st.textContent='正在推送…'; }
-  else if(latestRun.conclusion==='success'){ dot.className='dot ok'; st.textContent='最近推送成功 · '+fmtTime(latestRun.created_at); }
-  else if(latestRun.conclusion){ dot.className='dot bad'; st.textContent='最近推送'+(latestRun.conclusion==='failure'?'失败':'异常')+' · '+fmtTime(latestRun.created_at); }
-}
-setInterval(()=>{ if(token){ loadRuns().catch(()=>{}); } },20000);
-
-async function loadVar(){
-  const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/TO',{},true);
-  $('cur-email').textContent=v?('当前邮箱：'+v.value):'当前邮箱：未设置（回退到 secrets.TO）';
-}
-const DEFAULT_TITLE='人民日报与半月谈';
-async function loadTitle(){
-  const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/BOOK_TITLE',{},true);
-  const t=v?v.value:DEFAULT_TITLE;
-  $('cur-title').textContent=v?('当前书名：'+t):('当前书名：'+t+'（未自定义）');
-  $('chip-title').textContent='书名：'+t;
-}
-const DEFAULT_FEEDS=[
+/* ========== 常量与状态 ========== */
+var OWNER='chen113323', REPO='Calibre-News-Delivery', WF='calibre-news.yml', BR='master';
+var TK_KEY='wml_console_token';
+var WEEK=['日','一','二','三','四','五','六'];
+var RANGES={'1':'最近 24 小时','3':'最近 3 天','7':'最近 7 天','30':'最近 30 天','0':'全部记录'};
+var DEFAULT_TITLE='人民日报与半月谈';
+var DEFAULT_FEEDS=[
  ['人民日报电子版','https://rsshub.ktachibana.party/people/paper'],
  ['半月谈·今日谈','https://rsshub.ktachibana.party/banyuetan/jinritan'],
  ['半月谈·时政讲解','https://rsshub.ktachibana.party/banyuetan/shizhengjiangjie'],
@@ -341,29 +340,378 @@ const DEFAULT_FEEDS=[
  ['半月谈·文化','https://rsshub.ktachibana.party/banyuetan/wenhua'],
  ['半月谈·教育','https://rsshub.ktachibana.party/banyuetan/jiaoyu']
 ];
+var state={
+  token:'', persist:false, verified:false,
+  runs:[], range:'7', runningRun:null,
+  email:'', title:DEFAULT_TITLE, feeds:[], feedsCustom:false, schedule:null
+};
+
+/* ========== 基础工具 ========== */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function sleep(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+function toast(text,type){
+  var t=document.createElement('div'); t.className='toast t-'+(type||'');
+  t.textContent=text; document.body.appendChild(t);
+  requestAnimationFrame(function(){ t.classList.add('show'); });
+  setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.remove(); },320); },3800);
+}
+function setMsg(id,text,cls){ var el=$(id); if(el){ el.textContent=text||''; el.className='msg '+(cls||''); } }
+function busy(btn,txt){ if(!btn) return; btn.disabled=true; btn.dataset.old=btn.textContent; btn.textContent=txt; }
+function unbusy(btn){ if(!btn) return; btn.disabled=false; if(btn.dataset.old) btn.textContent=btn.dataset.old; }
+function fmtTime(s){ return new Date(s).toLocaleString('zh-CN',{timeZone:'Asia/Shanghai',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}); }
+function bjNow(){
+  var d=new Date(Date.now()+8*3600*1000);
+  return {y:d.getUTCFullYear(),m:d.getUTCMonth(),day:d.getUTCDate(),dow:d.getUTCDay()};
+}
+function b64encode(str){
+  var bytes=new TextEncoder().encode(str), bin='', i;
+  for(i=0;i<bytes.length;i++){ bin+=String.fromCharCode(bytes[i]); }
+  return btoa(bin);
+}
+function b64decode(b64){
+  var bin=atob(String(b64).replace(/\s/g,''));
+  var bytes=Uint8Array.from(bin,function(c){ return c.charCodeAt(0); });
+  return new TextDecoder().decode(bytes);
+}
+
+/* ========== 令牌存储（不落 DOM、不回显） ========== */
+function readStoredToken(){
+  var s=sessionStorage.getItem(TK_KEY), l=localStorage.getItem(TK_KEY);
+  state.persist=!!l;
+  return s||l||'';
+}
+function storeToken(t,persist){
+  if(persist){ localStorage.setItem(TK_KEY,t); sessionStorage.removeItem(TK_KEY); }
+  else{ sessionStorage.setItem(TK_KEY,t); localStorage.removeItem(TK_KEY); }
+  state.persist=persist;
+}
+function wipeToken(){ sessionStorage.removeItem(TK_KEY); localStorage.removeItem(TK_KEY); }
+
+/* ========== GitHub API 封装 ========== */
+async function api(path,opts,allow404){
+  opts=opts||{};
+  var headers=Object.assign({'Accept':'application/vnd.github+json'},opts.headers||{});
+  if(state.token){ headers['Authorization']='Bearer '+state.token; }
+  var r=await fetch('https://api.github.com'+path,Object.assign({},opts,{headers:headers}));
+  if(r.status===401) throw new Error('令牌无效或已过期');
+  if(r.status===404){
+    if(allow404) return null;
+    throw new Error('资源不存在或 PAT 缺少对应权限（HTTP 404）');
+  }
+  if(r.status===403) throw new Error('权限不足或被限流：请核对 PAT 的 Actions/Variables/Contents/Workflows 权限（HTTP 403）');
+  if(!r.ok) throw new Error('GitHub API 错误 HTTP '+r.status);
+  return r.status===204?null:r.json();
+}
+function getVar(name){ return api('/repos/'+OWNER+'/'+REPO+'/actions/variables/'+name,{},true); }
+function putVar(name,value){
+  return api('/repos/'+OWNER+'/'+REPO+'/actions/variables/'+name,{
+    method:'PUT',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,value:value})
+  });
+}
+function delVar(name){ return api('/repos/'+OWNER+'/'+REPO+'/actions/variables/'+name,{method:'DELETE'},true); }
+async function getWorkflow(){
+  var d=await api('/repos/'+OWNER+'/'+REPO+'/contents/.github/workflows/'+WF+'?ref='+BR);
+  return {sha:d.sha,text:b64decode(d.content)};
+}
+
+/* ========== 折叠控制器（统一） ========== */
+var COLLAPSE={};
+function registerCollapsible(id,opts){
+  COLLAPSE[id]=opts||{};
+  var card=$(id), head=card.querySelector('.collapse-head'), btn=card.querySelector('[data-btn]');
+  head.addEventListener('click',function(e){
+    if(e.target.closest('button')) return;
+    setCollapsed(id,!card.classList.contains('collapsed'));
+  });
+  if(btn){ btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    setCollapsed(id,!card.classList.contains('collapsed'));
+  }); }
+}
+function setCollapsed(id,on){
+  var card=$(id); if(!card) return;
+  card.classList.toggle('collapsed',on);
+  var btn=card.querySelector('[data-btn]'), o=COLLAPSE[id]||{};
+  if(btn){ btn.textContent=on?(o.closedText||'展开'):(o.openText||'收起'); }
+  if(!on && o.onExpand){ o.onExpand(); }
+  requestAnimationFrame(updateNavActive);
+}
+
+/* ========== 主题 ========== */
+function applyTheme(t){ document.documentElement.dataset.theme=t; localStorage.setItem('wml_theme',t); }
+
+/* ========== 运行记录 ========== */
+function badge(st,con){
+  if(con==='success') return '<span class="badge b-ok">成功</span>';
+  if(con==='failure'||con==='timed_out') return '<span class="badge b-bad">失败</span>';
+  if(con==='cancelled'||con==='skipped') return '<span class="badge b-skip">'+(con==='cancelled'?'已停止':'跳过')+'</span>';
+  if(st==='in_progress') return '<span class="badge b-run">运行中</span>';
+  return '<span class="badge b-wait">排队中</span>';
+}
+function evName(e){ return e==='schedule'?'定时':'手动'; }
+function filteredRuns(){
+  if(state.range==='0') return state.runs;
+  var cutoff=Date.now()-parseInt(state.range,10)*86400000;
+  return state.runs.filter(function(r){ return new Date(r.created_at).getTime()>=cutoff; });
+}
+function renderRuns(){
+  var list=$('runs'), arr=filteredRuns();
+  list.innerHTML='';
+  if(!state.verified){
+    list.innerHTML='<li class="empty" style="border:0;">输入并验证令牌后加载运行记录</li>';
+  }else if(!arr.length){
+    list.innerHTML='<li class="empty" style="border:0;">该时间范围内没有运行记录，可切换更大的时间范围</li>';
+  }else{
+    arr.forEach(function(r){
+      var li=document.createElement('li');
+      var running=r.status!=='completed';
+      li.innerHTML=badge(r.status,r.conclusion)
+        +'<span>'+evName(r.event)+'</span>'
+        +'<span class="r-time">'+esc(fmtTime(r.created_at))+'</span>'
+        +'<a href="'+esc(r.html_url)+'" target="_blank" rel="noopener">详情</a>'
+        +(running?'<button class="danger mini" data-stop="'+r.id+'">停止</button>':'')
+        +'<div class="r-name"></div>';
+      li.querySelector('.r-name').textContent=r.display_title||r.name||'';
+      list.appendChild(li);
+    });
+  }
+  var scope=$('run-scope');
+  if(!state.verified){ scope.textContent='时间范围：未验证令牌'; }
+  else if(!arr.length){ scope.textContent='时间范围：'+RANGES[state.range]+' · 0 条（北京时间）'; }
+  else{
+    var first=arr[arr.length-1].created_at, last=arr[0].created_at;
+    scope.textContent='时间范围：'+RANGES[state.range]+' · 共 '+arr.length+' 条 · 覆盖 '
+      +fmtTime(first)+' 至 '+fmtTime(last)+'（北京时间）';
+  }
+  var latest=state.runs[0];
+  var sum=RANGES[state.range]+' · '+arr.length+' 次';
+  if(latest){
+    sum+=' · 最近'+(latest.conclusion==='success'?'成功':latest.conclusion==='failure'?'失败':latest.status==='completed'?'结束':'进行中')
+      +' '+fmtTime(latest.created_at);
+  }
+  $('runs-summary').textContent=' · '+sum;
+  state.runningRun=state.runs.filter(function(r){ return r.status!=='completed'; })[0]||null;
+  renderStopbar();
+  updateHero();
+}
+async function loadRuns(){
+  if(!state.verified){ renderRuns(); return; }
+  var data=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs?per_page=100');
+  state.runs=data.workflow_runs||[];
+  renderRuns();
+}
+function updateHero(){
+  var dot=$('hero-dot'), st=$('hero-status'), latest=state.runs[0];
+  if(!state.verified){ dot.className='dot'; st.textContent='未验证令牌'; return; }
+  if(!latest){ dot.className='dot'; st.textContent='暂无运行记录'; return; }
+  if(latest.status==='in_progress'){ dot.className='dot run'; st.textContent='正在推送…'; }
+  else if(latest.conclusion==='success'){ dot.className='dot ok'; st.textContent='最近推送成功 · '+fmtTime(latest.created_at); }
+  else if(latest.conclusion){ dot.className='dot bad'; st.textContent='最近推送'+(latest.conclusion==='failure'?'失败':'异常')+' · '+fmtTime(latest.created_at); }
+}
+function renderStopbar(){
+  var bar=$('stopbar'), r=state.runningRun;
+  if(!r){ bar.classList.remove('show'); return; }
+  bar.classList.add('show');
+  var mins=Math.max(0,Math.round((Date.now()-new Date(r.created_at).getTime())/60000));
+  $('stopbar-text').textContent='正在'+evName(r.event)+'推送 #'+r.id+'（已进行约 '+mins+' 分钟，'
+    +(r.status==='queued'?'排队中':'运行中')+'）。停止后 GitHub 会终止该次运行；若已进入发送步骤，邮件可能已发出。';
+}
+
+/* ========== 令牌验证与界面刷新 ========== */
+function setAuthenticated(ok){
+  state.verified=ok;
+  if(!ok){
+    state.runs=[]; state.runningRun=null; state.schedule=null;
+    state.email=''; state.title=DEFAULT_TITLE;
+    $('cur-email').textContent='当前邮箱：需验证令牌';
+    $('cur-title').textContent='当前书名：需验证令牌';
+    $('chip-title').textContent='书名：—';
+    $('chip-feeds').textContent='源：—';
+    $('chip-sched').textContent='定时：—';
+    $('sched-cur').textContent='当前定时：需验证令牌';
+    $('config-summary').textContent=' · 需验证令牌';
+    $('feed-status').textContent='输入令牌后可读取与保存自定义源（已载入默认源）';
+    renderFeeds(DEFAULT_FEEDS,false);
+  }
+  renderRuns();
+}
+async function refreshAll(){
+  var jobs=[
+    loadRuns().catch(function(e){ setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'); }),
+    loadEmail().catch(function(e){ $('cur-email').textContent='当前邮箱：读取失败（'+e.message+'）'; }),
+    loadTitle().catch(function(e){ $('cur-title').textContent='当前书名：读取失败（'+e.message+'）'; }),
+    loadFeeds().catch(function(){}),
+    loadSchedule().catch(function(e){ $('sched-cur').textContent='当前定时：读取失败（'+e.message+'）'; })
+  ];
+  await Promise.all(jobs);
+  updateConfigSummary();
+}
+async function verifyToken(silent){
+  if(!state.token){ setAuthenticated(false); return false; }
+  try{
+    await api('/repos/'+OWNER+'/'+REPO);
+    setAuthenticated(true);
+    $('auth-summary').textContent=' · 有效'+(state.persist?'（长期记住）':'（仅本次会话）');
+    setMsg('auth-msg','令牌有效','ok');
+    $('token').value='';
+    $('token').placeholder='已保存令牌（不回显），点「管理」可更换或清除';
+    setCollapsed('sec-auth',true);
+    await refreshAll();
+    return true;
+  }catch(e){
+    setAuthenticated(false);
+    $('auth-summary').textContent=' · '+(silent?'已失效，请重新输入':'验证失败');
+    setMsg('auth-msg',(silent?'已保存的令牌不可用：':'')+e.message,'bad');
+    setCollapsed('sec-auth',false);
+    if(!silent) toast(e.message,'bad');
+    return false;
+  }
+}
+
+/* ========== 邮箱与书名 ========== */
+async function loadEmail(){
+  var v=await getVar('TO');
+  state.email=v?v.value:'';
+  $('cur-email').textContent=v?('当前邮箱：'+v.value):'当前邮箱：未设置（回退到 secrets.TO）';
+}
+async function loadTitle(){
+  var v=await getVar('BOOK_TITLE');
+  var t=v?v.value:DEFAULT_TITLE;
+  state.title=t;
+  $('cur-title').textContent=v?('当前书名：'+t):('当前书名：'+t+'（未自定义）');
+  $('chip-title').textContent='书名：'+t;
+}
+function updateConfigSummary(){
+  var parts=[];
+  parts.push(state.email||'默认邮箱');
+  parts.push(state.title);
+  if(state.schedule){ parts.push(scheduleText(state.schedule,true)); }
+  $('config-summary').textContent=' · '+parts.join(' · ');
+  $('config-summary').title=parts.join(' | ');
+}
+
+/* ========== 推送时间（读写 workflow cron） ========== */
+function scheduleText(sch,short){
+  if(!sch) return '未读取';
+  if(sch.freq==='every3') return (short?'每3天 ':'每 3 天（每月 1/4/7/10… 日）')+sch.time;
+  if(sch.freq==='every7') return (short?'每7天 ':'每 7 天（每周'+WEEK[sch.bjDow]+'）')+sch.time;
+  return '每天 '+sch.time;
+}
+function parseCron(expr){
+  var p=String(expr).trim().split(/\s+/);
+  if(p.length!==5) return null;
+  var um=parseInt(p[0],10), uh=parseInt(p[1],10);
+  if(isNaN(um)||isNaN(uh)||uh>23||um>59) return null;
+  var bh=(uh+8)%24;
+  var sch={freq:'daily',time:pad(bh)+':'+pad(um),bjDow:null};
+  if(p[2]==='*/3'){ sch.freq='every3'; }
+  else if(p[4]!=='*'){
+    var dow=parseInt(p[4],10);
+    if(!isNaN(dow)){
+      sch.freq='every7';
+      sch.bjDow=(dow+((uh+8)>=24?1:0))%7;
+    }
+  }
+  return sch;
+}
+function buildCron(freq,time){
+  var parts=time.split(':'), h=parseInt(parts[0],10), m=parseInt(parts[1],10);
+  var bj=bjNow();
+  var target=new Date(Date.UTC(bj.y,bj.m,bj.day,h,m)-8*3600*1000);
+  var um=target.getUTCMinutes(), uh=target.getUTCHours(), udow=target.getUTCDay();
+  var expr,desc;
+  if(freq==='every3'){ expr=um+' '+uh+' */3 * *'; desc='每3天（每月1/4/7/10…日）'; }
+  else if(freq==='every7'){ expr=um+' '+uh+' * * '+udow; desc='每7天（每周'+WEEK[bj.dow]+'，北京时间）'; }
+  else{ expr=um+' '+uh+' * * *'; desc='每天'; }
+  return {expr:expr,desc:desc,utcText:'UTC '+pad(uh)+':'+pad(um)};
+}
+function renderSchedule(){
+  var sch=state.schedule;
+  if(!sch){ $('sched-cur').textContent='当前定时：读取失败或无法解析'; return; }
+  $('sched-freq').value=sch.freq;
+  $('sched-time').value=sch.time;
+  $('sched-cur').textContent='当前定时：'+scheduleText(sch,false)+'（北京时间）';
+  $('chip-sched').textContent='定时：'+scheduleText(sch,true);
+}
+async function loadSchedule(){
+  var f=await getWorkflow();
+  var m=f.text.match(/- cron: '([^']*)'/);
+  if(!m) throw new Error('workflow 中未找到 cron 配置');
+  var sch=parseCron(m[1]);
+  if(!sch) throw new Error('cron 表达式无法解析：'+m[1]);
+  state.schedule=sch;
+  renderSchedule();
+  updateConfigSummary();
+}
+async function saveSchedule(){
+  if(!state.verified){ setMsg('sched-msg','请先在「1」中保存并验证令牌','bad'); return; }
+  var freq=$('sched-freq').value, time=$('sched-time').value;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)){
+    setMsg('sched-msg','请输入有效时间（HH:MM，24 小时制）','bad'); return;
+  }
+  var btn=$('save-sched'); busy(btn,'保存中…'); setMsg('sched-msg','');
+  try{
+    var built=buildCron(freq,time);
+    var f=await getWorkflow();
+    var re=/([ \t]*)- cron: '[^']*'[^\n]*/;
+    var match=f.text.match(re);
+    if(!match) throw new Error('未在 workflow 中定位到 cron 行，未做任何修改');
+    var newline=match[1]+"- cron: '"+built.expr+"'   # "+built.utcText+' = 北京 '+time+'（'+built.desc+'）';
+    var updated=f.text.replace(re,newline);
+    if(updated===f.text) throw new Error('cron 行替换失败，未做任何修改');
+    await api('/repos/'+OWNER+'/'+REPO+'/contents/.github/workflows/'+WF,{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        message:'更新推送时间：'+built.desc+' 北京 '+time,
+        content:b64encode(updated),sha:f.sha
+      })
+    });
+    state.schedule=parseCron(built.expr);
+    renderSchedule(); updateConfigSummary();
+    setMsg('sched-msg','已保存 ✓ '+built.desc+' '+time+'（北京时间），cron 已同步为 '+built.expr+'，下一次推送起生效','ok');
+    toast('推送时间已更新','ok');
+  }catch(e){
+    setMsg('sched-msg','保存失败：'+e.message+'。若提示权限不足，请为 PAT 补勾 Contents(读写) 与 Workflows(读写) 后重试；原定时未被修改。','bad');
+    toast('推送时间保存失败','bad');
+  }
+  unbusy(btn);
+}
+
+/* ========== RSS 源 ========== */
 function feedRow(t,u){
-  const div=document.createElement('div'); div.className='feedrow';
+  var div=document.createElement('div'); div.className='feedrow';
   div.innerHTML='<input class="ft" placeholder="栏目名"><input class="fu" placeholder="RSS 地址 https://…"><button class="fx" title="删除该行">×</button>';
   div.querySelector('.ft').value=t||'';
   div.querySelector('.fu').value=u||'';
-  div.querySelector('.fx').onclick=()=>{ if($('feed-rows').children.length>1) div.remove(); else $('feeds-msg').textContent='至少保留一行'; };
+  div.querySelector('.fx').addEventListener('click',function(){
+    if($('feed-rows').children.length>1){ div.remove(); }
+    else{ setMsg('feeds-msg','至少保留一行','warn'); }
+  });
   return div;
 }
 function renderFeeds(arr,custom){
-  const box=$('feed-rows'); box.innerHTML='';
-  arr.forEach(p=>box.appendChild(feedRow(p[0],p[1])));
+  state.feeds=arr; state.feedsCustom=custom;
+  var box=$('feed-rows'); box.innerHTML='';
+  arr.forEach(function(p){ box.appendChild(feedRow(p[0],p[1])); });
   $('feed-status').textContent=custom?('自定义源 · '+arr.length+' 个'):('内置默认源 · '+arr.length+' 个');
   $('chip-feeds').textContent='源：'+(custom?'自定义 ':'默认 ')+arr.length+' 个';
   $('feeds-summary').textContent=' · '+(custom?'自定义 ':'默认 ')+arr.length+' 个';
-  $('feeds-summary').title=arr.map(x=>x[0]).join('、');
+  $('feeds-summary').title=arr.map(function(x){ return x[0]; }).join('、');
 }
 async function loadFeeds(){
-  if(!token){ renderFeeds(DEFAULT_FEEDS,false); $('feed-status').textContent='输入令牌后可读取与保存自定义源（已载入默认源）'; return; }
+  if(!state.verified){ renderFeeds(DEFAULT_FEEDS,false); return; }
   try{
-    const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/FEEDS',{},true);
+    var v=await getVar('FEEDS');
     if(v){
-      const parsed=JSON.parse(v.value);
-      if(Array.isArray(parsed)&&parsed.length){ renderFeeds(parsed.map(x=>[x.title||'',x.url||'']),true); return; }
+      var parsed=JSON.parse(v.value);
+      if(Array.isArray(parsed)&&parsed.length){
+        renderFeeds(parsed.map(function(x){ return [x.title||'',x.url||'']; }),true);
+        return;
+      }
     }
     renderFeeds(DEFAULT_FEEDS,false);
   }catch(e){
@@ -371,195 +719,250 @@ async function loadFeeds(){
     $('feed-status').textContent='读取自定义源失败（'+e.message+'），已载入默认源';
   }
 }
-
-$('save-token').onclick=async()=>{
-  token=$('token').value.trim();
-  if(!token){ setMsg('auth-msg','请输入令牌','bad'); return; }
-  const btn=$('save-token'); busy(btn,'验证中…');
-  setMsg('auth-msg','');
+async function saveFeeds(){
+  if(!state.verified){ setMsg('feeds-msg','请先保存并验证令牌','bad'); return; }
+  var rows=Array.prototype.slice.call(document.querySelectorAll('#feed-rows .feedrow')), arr=[], i;
+  for(i=0;i<rows.length;i++){
+    var t=rows[i].querySelector('.ft').value.trim(), u=rows[i].querySelector('.fu').value.trim();
+    if(!t&&!u) continue;
+    if(!t){ setMsg('feeds-msg','存在未填写栏目名的行','bad'); return; }
+    if(!/^https?:\/\//.test(u)){ setMsg('feeds-msg','RSS 地址必须以 http(s):// 开头：'+u,'bad'); return; }
+    arr.push({title:t,url:u});
+  }
+  if(!arr.length){ setMsg('feeds-msg','至少保留一个有效的 RSS 源','bad'); return; }
+  var btn=$('save-feeds'); busy(btn,'保存中…');
   try{
-    await api('/repos/'+OWNER+'/'+REPO);
-    if($('remember-token').checked){ localStorage.setItem(TK_KEY,token); sessionStorage.removeItem(TK_KEY); }
-    else { sessionStorage.setItem(TK_KEY,token); localStorage.removeItem(TK_KEY); }
-    setMsg('auth-msg','令牌有效，已保存'+($('remember-token').checked?'（本机长期）':'（仅本次会话）'),'ok');
-    authSummary('有效'+($('remember-token').checked?'（长期记住）':'（仅本次会话）'));
-    authCollapse(true);
-    toast('令牌验证通过','ok');
-    loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
-    loadVar().catch(()=>{});
-    loadTitle().catch(()=>{});
-    loadFeeds().catch(()=>{});
-  }catch(e){ setMsg('auth-msg',e.message,'bad'); toast(e.message,'bad'); authSummary('验证失败，请检查'); authCollapse(false); }
+    await putVar('FEEDS',JSON.stringify(arr));
+    setMsg('feeds-msg','已保存 ✓ 共 '+arr.length+' 个源，下一次推送生效','ok');
+    toast('RSS 源已保存（'+arr.length+' 个）','ok');
+    renderFeeds(arr.map(function(x){ return [x.title,x.url]; }),true);
+    setCollapsed('sec-feeds',true);
+  }catch(e){ setMsg('feeds-msg','保存失败：'+e.message,'bad'); }
   unbusy(btn);
-};
-$('clear-token').onclick=()=>{
-  sessionStorage.removeItem(TK_KEY); localStorage.removeItem(TK_KEY);
-  token=''; $('token').value=''; $('remember-token').checked=false;
-  setMsg('auth-msg','已清除本机保存的令牌','warn');
-  authSummary('未设置'); authCollapse(false);
-  toast('令牌已清除','warn');
-};
+}
+async function resetFeeds(){
+  if(!state.verified){ setMsg('feeds-msg','请先保存并验证令牌','bad'); return; }
+  if(!confirm('确定恢复内置默认源吗？将清除你在网页上保存的自定义源列表。')) return;
+  try{
+    await delVar('FEEDS');
+    setMsg('feeds-msg','已恢复内置默认源，下一次推送生效','ok');
+    toast('已恢复默认源','warn');
+  }catch(e){ setMsg('feeds-msg','清除失败：'+e.message,'bad'); }
+  renderFeeds(DEFAULT_FEEDS,false);
+  setCollapsed('sec-feeds',true);
+}
 
-$('btn-dispatch').onclick=async()=>{
-  if(!token){ setMsg('dispatch-msg','请先在「1」中保存令牌','bad'); return; }
-  const btn=$('btn-dispatch'); busy(btn,'触发中…');
-  setMsg('dispatch-msg','');
+/* ========== 手动推送与停止 ========== */
+async function dispatch(){
+  if(!state.verified){ setMsg('dispatch-msg','请先在「1」中保存并验证令牌','bad'); return; }
+  var btn=$('btn-dispatch'); busy(btn,'触发中…'); setMsg('dispatch-msg','');
+  var temp=$('temp-email').value.trim();
+  if(temp&&temp.indexOf('@')<1){ setMsg('dispatch-msg','临时邮箱格式不正确','bad'); unbusy(btn); return; }
   try{
     await api('/repos/'+OWNER+'/'+REPO+'/actions/workflows/'+WF+'/dispatches',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ref:BR, inputs:{to_email:$('temp-email').value.trim()}})
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ref:BR,inputs:{to_email:temp}})
     });
-    setMsg('dispatch-msg','已触发 ✓ 正在监控运行状态…','ok');
+    setMsg('dispatch-msg','已触发 ✓ 正在监控运行状态…'+(temp?'（本次发送到 '+temp+'）':''),'ok');
     toast('推送已触发，约 2–5 分钟完成','ok');
     pollNewRun(Date.now());
   }catch(e){ setMsg('dispatch-msg','触发失败：'+e.message,'bad'); toast('触发失败','bad'); }
   unbusy(btn);
-};
+}
 function pollNewRun(start){
-  let n=0;
-  const timer=setInterval(async()=>{
+  var n=0;
+  var timer=setInterval(async function(){
     n++;
     try{
-      const data=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs?per_page=1');
-      const r=data.workflow_runs[0];
+      var data=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs?per_page=1');
+      var r=(data.workflow_runs||[])[0];
       if(r&&new Date(r.created_at).getTime()>start-60000){
         setMsg('dispatch-msg','运行 '+r.id+' · '+(r.conclusion||(r.status==='in_progress'?'运行中':'排队中')),'ok');
-        loadRuns().catch(()=>{});
+        loadRuns().catch(function(){});
         if(r.status==='completed'){
           clearInterval(timer);
           if(r.conclusion==='success'){ setMsg('dispatch-msg','推送完成 ✓ 请查收 Kindle','ok'); toast('推送完成，请查收 Kindle','ok'); }
-          else { setMsg('dispatch-msg','运行失败：点「详情」查看日志，修复后可再次推送','warn'); toast('推送失败，请查看日志','bad'); }
+          else if(r.conclusion==='cancelled'){ setMsg('dispatch-msg','该次运行已被停止','warn'); }
+          else{ setMsg('dispatch-msg','运行失败：点「详情」查看日志，修复后可再次推送','warn'); toast('推送失败，请查看日志','bad'); }
         }
       }
     }catch(e){ /* 忽略单次轮询错误 */ }
     if(n>40){ clearInterval(timer); }
   },15000);
 }
-
-$('save-email').onclick=async()=>{
-  if(!token){ setMsg('email-msg','请先在「1」中保存令牌','bad'); return; }
-  const v=$('new-email').value.trim();
-  if(!v||v.indexOf('@')<1){ setMsg('email-msg','请输入有效邮箱','bad'); return; }
-  const btn=$('save-email'); busy(btn,'保存中…');
+async function cancelRun(id){
+  if(!state.verified){ setMsg('dispatch-msg','请先保存并验证令牌','bad'); return; }
+  if(!confirm('确定停止 run #'+id+' 这次推送吗？\nGitHub 会立即终止该次运行；若已进入发送步骤，邮件可能已发出。')) return;
+  var btn=$('btn-stop'); busy(btn,'停止中…');
+  setMsg('dispatch-msg','正在请求停止 run #'+id+' …','warn');
   try{
-    await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/TO',{
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:'TO',value:v})
-    });
-    setMsg('email-msg','已保存 ✓ 之后每次推送将发送到 '+v,'ok');
-    toast('收件邮箱已更新','ok');
-    $('cur-email').textContent='当前邮箱：'+v; $('new-email').value='';
-  }catch(e){ setMsg('email-msg','保存失败：'+e.message,'bad'); }
-  unbusy(btn);
-};
-
-$('save-title').onclick=async()=>{
-  if(!token){ setMsg('title-msg','请先在「1」中保存令牌','bad'); return; }
-  const v=$('new-title').value.trim();
-  const btn=$('save-title'); busy(btn,'保存中…');
-  try{
-    if(v){
-      await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/BOOK_TITLE',{
-        method:'PUT', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({name:'BOOK_TITLE',value:v})
-      });
-      setMsg('title-msg','已保存 ✓ 下一次推送书名为《'+v+'》','ok');
-      toast('书名已更新','ok');
-    }else{
-      await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/BOOK_TITLE',{method:'DELETE'},true);
-      setMsg('title-msg','已清除自定义书名，下一次推送恢复默认','ok');
-      toast('书名已恢复默认','warn');
+    await api('/repos/'+OWNER+'/'+REPO+'/actions/runs/'+id+'/cancel',{method:'POST'});
+    var i,r;
+    for(i=0;i<12;i++){
+      await sleep(4000);
+      r=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs/'+id);
+      if(r.status==='completed'){
+        if(r.conclusion==='cancelled'){
+          setMsg('dispatch-msg','已停止 ✓ run #'+id+' 已取消，未完成的抓取与发送已终止','ok');
+          toast('推送已停止','ok');
+        }else{
+          setMsg('dispatch-msg','该次运行已结束，结果：'+r.conclusion,'warn');
+        }
+        await loadRuns().catch(function(){});
+        unbusy(btn);
+        return;
+      }
     }
-    loadTitle().catch(()=>{});
-    $('new-title').value='';
-  }catch(e){ setMsg('title-msg','保存失败：'+e.message,'bad'); }
-  unbusy(btn);
-};
-
-$('add-feed').onclick=()=>$('feed-rows').appendChild(feedRow('',''));
-$('save-feeds').onclick=async()=>{
-  if(!token){ setMsg('feeds-msg','请先在「1」中保存令牌','bad'); return; }
-  const rows=[...document.querySelectorAll('#feed-rows .feedrow')];
-  const arr=[];
-  for(const r of rows){
-    const t=r.querySelector('.ft').value.trim(), u=r.querySelector('.fu').value.trim();
-    if(!t&&!u) continue;
-    if(!t){ setMsg('feeds-msg','存在未填写栏目名的行','bad'); toast('存在未填写栏目名的行','bad'); return; }
-    if(!/^https?:\/\//.test(u)){ setMsg('feeds-msg','RSS 地址必须以 http(s):// 开头：'+u,'bad'); toast('RSS 地址不合法','bad'); return; }
-    arr.push({title:t,url:u});
+    setMsg('dispatch-msg','停止请求已提交，GitHub 尚未确认结束，请稍后点「刷新状态」查看','warn');
+  }catch(e){
+    setMsg('dispatch-msg','停止失败：'+e.message,'bad');
+    toast('停止失败','bad');
   }
-  if(!arr.length){ setMsg('feeds-msg','至少保留一个有效的 RSS 源','bad'); return; }
-  const btn=$('save-feeds'); busy(btn,'保存中…');
-  try{
-    await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/FEEDS',{
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({name:'FEEDS',value:JSON.stringify(arr)})
-    });
-    setMsg('feeds-msg','已保存 ✓ 共 '+arr.length+' 个源，下一次推送生效','ok');
-    toast('RSS 源已保存（'+arr.length+' 个）','ok');
-    $('feed-status').textContent='自定义源 · '+arr.length+' 个';
-    $('chip-feeds').textContent='源：自定义 '+arr.length+' 个';
-    $('feeds-summary').textContent=' · 自定义 '+arr.length+' 个';
-    feedsCollapse(true);
-  }catch(e){ setMsg('feeds-msg','保存失败：'+e.message,'bad'); }
   unbusy(btn);
-};
-$('reset-feeds').onclick=async()=>{
-  if(!token){ setMsg('feeds-msg','请先保存令牌','bad'); return; }
-  try{
-    await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/FEEDS',{method:'DELETE'},true);
-    setMsg('feeds-msg','已恢复内置默认源，下一次推送生效','ok');
-    toast('已恢复默认源','warn');
-  }catch(e){ setMsg('feeds-msg','清除失败：'+e.message,'bad'); }
-  renderFeeds(DEFAULT_FEEDS,false);
-  feedsCollapse(true);
-};
-
-$('runs').innerHTML='<li style="border:0;display:block;"><div class="skeleton"></div><div class="skeleton" style="width:75%;"></div><div class="skeleton" style="width:50%;"></div></li>';
-if(token){
-  authSummary('验证中…'); authCollapse(true);
-  setMsg('auth-msg','已从本机读取令牌，正在验证…');
-  api('/repos/'+OWNER+'/'+REPO).then(()=>{
-    setMsg('auth-msg','令牌有效','ok');
-    authSummary('有效'+(localStorage.getItem(TK_KEY)?'（长期记住）':'（仅本次会话）'));
-    authCollapse(true);
-    loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
-    loadVar().catch(()=>{});
-    loadTitle().catch(()=>{});
-    loadFeeds().catch(()=>{});
-  }).catch(e=>{
-    setMsg('auth-msg','已保存的令牌不可用：'+e.message,'bad');
-    authSummary('已过期，请重新输入'); authCollapse(false);
-    toast('令牌不可用：'+e.message,'bad');
-  });
-}else{
-  authSummary('未设置'); authCollapse(false);
-  loadFeeds().catch(()=>{});
-  $('runs').innerHTML='<li style="color:var(--text2);border:0;">输入令牌后加载运行记录</li>';
+  loadRuns().catch(function(){});
 }
 
-document.querySelectorAll('.quicknav a').forEach(a=>{
-  a.addEventListener('click',e=>{
-    e.preventDefault();
-    const href=a.getAttribute('href');
-    if(href==='#sec-feeds') feedsCollapse(false);
-    const t=document.querySelector(href);
-    if(t) t.scrollIntoView({behavior:'smooth',block:'start'});
+/* ========== 锚点导航（JS 计算定位 + 滚动高亮） ========== */
+var NAV_IDS=['sec-dispatch','sec-config','sec-feeds','sec-runs'];
+function navHeight(){ var n=document.querySelector('.quicknav'); return n?n.offsetHeight:0; }
+function setNavActive(id){
+  document.querySelectorAll('.quicknav a').forEach(function(a){
+    a.classList.toggle('active',a.getAttribute('href')==='#'+id);
   });
-});
-const qn={};
-document.querySelectorAll('.quicknav a').forEach(a=>{ qn[a.getAttribute('href').slice(1)]=a; });
-const secIO=new IntersectionObserver(es=>{
-  es.forEach(en=>{
-    if(en.isIntersecting){
-      Object.values(qn).forEach(x=>x.classList.remove('active'));
-      const a=qn[en.target.id]; if(a) a.classList.add('active');
-    }
+}
+function updateNavActive(){
+  var pos=window.scrollY+navHeight()+24, current=NAV_IDS[0], i;
+  for(i=0;i<NAV_IDS.length;i++){
+    var el=$(NAV_IDS[i]);
+    if(el&&el.offsetTop<=pos){ current=NAV_IDS[i]; }
+  }
+  var doc=document.documentElement;
+  if(window.scrollY+window.innerHeight>=doc.scrollHeight-8){ current=NAV_IDS[NAV_IDS.length-1]; }
+  setNavActive(current);
+}
+function initNav(){
+  document.querySelectorAll('.quicknav a').forEach(function(a){
+    a.addEventListener('click',function(e){
+      e.preventDefault();
+      var id=a.getAttribute('href').slice(1), el=$(id);
+      if(!el) return;
+      setCollapsed(id,false);
+      var y=el.getBoundingClientRect().top+window.scrollY-navHeight()-10;
+      window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
+      setNavActive(id);
+    });
   });
-},{rootMargin:'-30% 0px -60% 0px'});
-['sec-dispatch','sec-config','sec-feeds','sec-runs'].forEach(id=>{
-  const s2=document.getElementById(id); if(s2) secIO.observe(s2);
-});
+  var ticking=false;
+  window.addEventListener('scroll',function(){
+    if(ticking) return;
+    ticking=true;
+    requestAnimationFrame(function(){ updateNavActive(); ticking=false; });
+  },{passive:true});
+  window.addEventListener('resize',updateNavActive);
+  updateNavActive();
+}
+
+/* ========== 事件绑定 ========== */
+function bindEvents(){
+  $('theme-toggle').addEventListener('click',function(){
+    applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+  });
+  $('save-token').addEventListener('click',async function(){
+    var t=$('token').value.trim();
+    if(!t){ setMsg('auth-msg','请输入令牌（已保存的令牌不会回显，如需更换请直接粘贴新令牌）','bad'); return; }
+    state.token=t;
+    storeToken(t,$('remember-token').checked);
+    var btn=$('save-token'); busy(btn,'验证中…'); setMsg('auth-msg','验证中…');
+    await verifyToken(false);
+    unbusy(btn);
+  });
+  $('clear-token').addEventListener('click',function(){
+    if(!confirm('确定清除本机保存的令牌吗？清除后需要重新输入才能操作。')) return;
+    wipeToken(); state.token=''; state.persist=false;
+    $('token').value=''; $('token').placeholder='github_pat_…';
+    $('remember-token').checked=false;
+    setAuthenticated(false);
+    $('auth-summary').textContent=' · 未设置';
+    setMsg('auth-msg','已清除本机保存的令牌','warn');
+    setCollapsed('sec-auth',false);
+    toast('令牌已清除','warn');
+  });
+  $('btn-dispatch').addEventListener('click',dispatch);
+  $('btn-refresh').addEventListener('click',function(){
+    if(!state.verified){ setMsg('dispatch-msg','请先保存并验证令牌','bad'); return; }
+    loadRuns().then(function(){ toast('状态已刷新','ok'); }).catch(function(e){ setMsg('dispatch-msg','刷新失败：'+e.message,'bad'); });
+  });
+  $('btn-stop').addEventListener('click',function(){
+    if(state.runningRun){ cancelRun(state.runningRun.id); }
+    else{ setMsg('dispatch-msg','当前没有正在进行的推送','warn'); }
+  });
+  $('runs').addEventListener('click',function(e){
+    var b=e.target.closest('[data-stop]');
+    if(b){ cancelRun(parseInt(b.getAttribute('data-stop'),10)); }
+  });
+  $('save-email').addEventListener('click',async function(){
+    if(!state.verified){ setMsg('email-msg','请先保存并验证令牌','bad'); return; }
+    var v=$('new-email').value.trim();
+    if(!v||v.indexOf('@')<1){ setMsg('email-msg','请输入有效邮箱','bad'); return; }
+    var btn=$('save-email'); busy(btn,'保存中…');
+    try{
+      await putVar('TO',v);
+      setMsg('email-msg','已保存 ✓ 之后每次推送将发送到 '+v,'ok');
+      toast('收件邮箱已更新','ok');
+      $('new-email').value='';
+      await loadEmail(); updateConfigSummary();
+    }catch(e){ setMsg('email-msg','保存失败：'+e.message,'bad'); }
+    unbusy(btn);
+  });
+  $('save-title').addEventListener('click',async function(){
+    if(!state.verified){ setMsg('title-msg','请先保存并验证令牌','bad'); return; }
+    var v=$('new-title').value.trim(), btn=$('save-title'); busy(btn,'保存中…');
+    try{
+      if(v){ await putVar('BOOK_TITLE',v); setMsg('title-msg','已保存 ✓ 下一次推送书名为《'+v+'》','ok'); }
+      else{ await delVar('BOOK_TITLE'); setMsg('title-msg','已清除自定义书名，下一次推送恢复默认','ok'); }
+      toast('书名已更新','ok');
+      $('new-title').value='';
+      await loadTitle(); updateConfigSummary();
+    }catch(e){ setMsg('title-msg','保存失败：'+e.message,'bad'); }
+    unbusy(btn);
+  });
+  $('save-sched').addEventListener('click',saveSchedule);
+  $('add-feed').addEventListener('click',function(){ $('feed-rows').appendChild(feedRow('','')); });
+  $('save-feeds').addEventListener('click',saveFeeds);
+  $('reset-feeds').addEventListener('click',resetFeeds);
+  $('run-range').addEventListener('change',function(){ state.range=$('run-range').value; renderRuns(); });
+  $('runs-refresh').addEventListener('click',function(){
+    if(!state.verified){ toast('请先验证令牌','warn'); return; }
+    loadRuns().catch(function(e){ toast('刷新失败：'+e.message,'bad'); });
+  });
+}
+
+/* ========== 初始化 ========== */
+async function init(){
+  applyTheme(localStorage.getItem('wml_theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'));
+  registerCollapsible('sec-auth',{openText:'收起',closedText:'管理'});
+  registerCollapsible('sec-config',{openText:'收起',closedText:'编辑'});
+  registerCollapsible('sec-feeds',{openText:'收起',closedText:'编辑'});
+  registerCollapsible('sec-runs',{openText:'收起',closedText:'展开'});
+  bindEvents();
+  initNav();
+  $('runs').innerHTML='<li style="border:0;display:block;"><div class="skeleton"></div><div class="skeleton" style="width:75%;"></div><div class="skeleton" style="width:50%;"></div></li>';
+  state.token=readStoredToken();
+  $('remember-token').checked=state.persist;
+  if(state.token){
+    $('auth-summary').textContent=' · 验证中…';
+    setCollapsed('sec-auth',true);
+    setMsg('auth-msg','已从本机读取令牌，正在验证…');
+    await verifyToken(true);
+  }else{
+    setAuthenticated(false);
+    setCollapsed('sec-auth',false);
+    renderFeeds(DEFAULT_FEEDS,false);
+  }
+  setInterval(function(){ if(state.verified){ loadRuns().catch(function(){}); } },20000);
+}
+init();
+})();
 </script>
 </body>
 </html>

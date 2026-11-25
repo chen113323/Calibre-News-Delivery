@@ -37,6 +37,10 @@ ul.runs li:first-child { border-top:0; }
 a { color:var(--accent); text-decoration:none; }
 a:hover { text-decoration:underline; }
 label.opt { font-size:12.5px; color:#6a6f78; display:block; margin-bottom:4px; }
+.feedrow { display:flex; gap:6px; margin-bottom:6px; }
+.feedrow input { flex:1 1 120px; border:1px solid var(--line); border-radius:8px; padding:8px 10px; font-size:13px; min-width:0; }
+.feedrow .ft { flex:0 0 128px; }
+.feedrow .fx { background:#c0392b; padding:8px 12px; flex-shrink:0; font-size:14px; }
 </style>
 </head>
 <body>
@@ -80,7 +84,20 @@ label.opt { font-size:12.5px; color:#6a6f78; display:block; margin-bottom:4px; }
 </section>
 
 <section class="card">
-  <h2>4 · 最近运行</h2>
+  <h2>4 · RSS 源配置</h2>
+  <p class="hint">自定义每日推送的 RSS 源（支持 RSSHub 路由与原生 RSS 全文源）。保存后下一次推送生效；「恢复默认」清除自定义配置，回退内置的人民日报+半月谈源。源越多运行越慢，建议 ≤30 个。</p>
+  <div class="hint" id="feed-status">读取中…</div>
+  <div id="feed-rows"></div>
+  <div class="row" style="margin-top:10px;">
+    <button id="add-feed" style="background:#888780;">添加一行</button>
+    <button id="save-feeds">保存源列表</button>
+    <button id="reset-feeds" style="background:#888780;">恢复默认</button>
+  </div>
+  <div class="msg" id="feeds-msg"></div>
+</section>
+
+<section class="card">
+  <h2>5 · 最近运行</h2>
   <ul class="runs" id="runs"><li style="color:#6a6f78;border:0;">输入令牌后加载…</li></ul>
 </section>
 </div>
@@ -93,12 +110,16 @@ let token=localStorage.getItem(TK_KEY)||'';
 $('token').value=token;
 
 function setMsg(id,text,cls){ const el=$(id); el.textContent=text; el.className='msg '+(cls||''); }
-async function api(path,opts={}){
+async function api(path,opts={},allow404=false){
   const r=await fetch('https://api.github.com'+path,Object.assign({
     headers:{ 'Authorization':'Bearer '+token, 'Accept':'application/vnd.github+json' }
   },opts));
   if(r.status===401) throw new Error('令牌无效或已过期');
-  if(r.status===403||r.status===404) throw new Error('权限不足：请确认 PAT 已勾选 Actions(读写)'+(path.includes('/variables')?' 与 Variables(读写)':'')+'，且仅授权本仓库');
+  if(r.status===404){
+    if(allow404) return null;
+    throw new Error('资源不存在（或 PAT 缺少 Variables 权限）');
+  }
+  if(r.status===403) throw new Error('权限不足：请确认 PAT 已勾选 Actions(读写)'+(path.includes('/variables')?' 与 Variables(读写)':'')+'，且仅授权本仓库');
   if(!r.ok) throw new Error('GitHub API 错误 HTTP '+r.status);
   return r.status===204?null:r.json();
 }
@@ -125,12 +146,80 @@ async function loadRuns(){
 }
 async function loadVar(){
   try{
-    const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/TO');
-    $('cur-email').textContent='当前值：'+v.value;
+    const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/TO',{},true);
+    $('cur-email').textContent=v?('当前值：'+v.value):'当前值：未设置（回退到 secrets.TO）';
   }catch(e){
-    $('cur-email').textContent=e.message==='GitHub API 错误 HTTP 404'?'当前值：未设置（回退到 secrets.TO）':'当前值：'+e.message;
+    $('cur-email').textContent='当前值：'+e.message;
   }
 }
+
+const DEFAULT_FEEDS=[
+ ['人民日报电子版','https://rsshub.ktachibana.party/people/paper'],
+ ['半月谈·今日谈','https://rsshub.ktachibana.party/banyuetan/jinritan'],
+ ['半月谈·时政讲解','https://rsshub.ktachibana.party/banyuetan/shizhengjiangjie'],
+ ['半月谈·评论','https://rsshub.ktachibana.party/banyuetan/banyuetanpinglun'],
+ ['半月谈·基层治理','https://rsshub.ktachibana.party/banyuetan/jicengzhili'],
+ ['半月谈·文化','https://rsshub.ktachibana.party/banyuetan/wenhua'],
+ ['半月谈·教育','https://rsshub.ktachibana.party/banyuetan/jiaoyu']
+];
+function feedRow(t,u){
+  const div=document.createElement('div'); div.className='feedrow';
+  div.innerHTML='<input class="ft" placeholder="栏目名"><input class="fu" placeholder="RSS 地址 https://…"><button class="fx" title="删除该行">×</button>';
+  div.querySelector('.ft').value=t||'';
+  div.querySelector('.fu').value=u||'';
+  div.querySelector('.fx').onclick=()=>{ if($('feed-rows').children.length>1) div.remove(); else $('feeds-msg').textContent='至少保留一行'; };
+  return div;
+}
+function renderFeeds(arr,custom){
+  const box=$('feed-rows'); box.innerHTML='';
+  arr.forEach(p=>box.appendChild(feedRow(p[0],p[1])));
+  $('feed-status').textContent=custom?('当前使用自定义源（'+arr.length+' 个）'):('当前使用内置默认源（'+arr.length+' 个）');
+}
+async function loadFeeds(){
+  if(!token){ renderFeeds(DEFAULT_FEEDS,false); $('feed-status').textContent='输入令牌后可读取与保存自定义源（下方已载入默认源）'; return; }
+  try{
+    const v=await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/FEEDS',{},true);
+    if(v){
+      const parsed=JSON.parse(v.value);
+      if(Array.isArray(parsed)&&parsed.length){ renderFeeds(parsed.map(x=>[x.title||'',x.url||'']),true); return; }
+    }
+    renderFeeds(DEFAULT_FEEDS,false);
+  }catch(e){
+    renderFeeds(DEFAULT_FEEDS,false);
+    $('feed-status').textContent='读取自定义源失败（'+e.message+'），已载入默认源';
+  }
+}
+$('add-feed').onclick=()=>$('feed-rows').appendChild(feedRow('',''));
+$('save-feeds').onclick=async()=>{
+  if(!token){ setMsg('feeds-msg','请先在「1」中保存令牌','bad'); return; }
+  const rows=[...document.querySelectorAll('#feed-rows .feedrow')];
+  const arr=[];
+  for(const r of rows){
+    const t=r.querySelector('.ft').value.trim(), u=r.querySelector('.fu').value.trim();
+    if(!t&&!u) continue;
+    if(!t){ setMsg('feeds-msg','存在未填写栏目名的行','bad'); return; }
+    if(!/^https?:\/\//.test(u)){ setMsg('feeds-msg','RSS 地址必须以 http(s):// 开头：'+u,'bad'); return; }
+    arr.push({title:t,url:u});
+  }
+  if(!arr.length){ setMsg('feeds-msg','至少保留一个有效的 RSS 源','bad'); return; }
+  setMsg('feeds-msg','保存中…');
+  try{
+    await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/FEEDS',{
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:'FEEDS',value:JSON.stringify(arr)})
+    });
+    setMsg('feeds-msg','已保存 ✓ 共 '+arr.length+' 个源，下一次推送生效','ok');
+    $('feed-status').textContent='当前使用自定义源（'+arr.length+' 个）';
+  }catch(e){ setMsg('feeds-msg','保存失败：'+e.message,'bad'); }
+};
+$('reset-feeds').onclick=async()=>{
+  if(!token){ setMsg('feeds-msg','请先保存令牌','bad'); return; }
+  try{
+    await api('/repos/'+OWNER+'/'+REPO+'/actions/variables/FEEDS',{method:'DELETE'},true);
+    setMsg('feeds-msg','已恢复内置默认源（自定义配置已清除），下一次推送生效','ok');
+  }catch(e){ setMsg('feeds-msg','清除失败：'+e.message,'bad'); }
+  renderFeeds(DEFAULT_FEEDS,false);
+};
 
 $('save-token').onclick=async()=>{
   token=$('token').value.trim();
@@ -205,7 +294,10 @@ if(token){
     setMsg('auth-msg','令牌有效','ok');
     loadRuns().catch(e=>setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'));
     loadVar().catch(()=>{});
+    loadFeeds().catch(()=>{});
   }).catch(e=>setMsg('auth-msg','已保存的令牌不可用：'+e.message,'bad'));
+}else{
+  loadFeeds().catch(()=>{});
 }
 </script>
 </body>

@@ -10,6 +10,7 @@ var RANGES={'1':'最近 24 小时','3':'最近 3 天','7':'最近 7 天','30':'�
 var REPO_API='/repos/'+OWNER+'/'+REPO;
 var RUNS_ALL=REPO_API+'/actions/workflows/'+WF+'/runs?per_page=100';
 var RUNS_ONE=REPO_API+'/actions/workflows/'+WF+'/runs?per_page=1';
+var WF_API=REPO_API+'/actions/workflows/'+WF;
 var DEFAULT_TITLE='人民日报与半月谈';
 var DEFAULT_FEEDS=[
  ['人民日报电子版','https://rsshub.ktachibana.party/people/paper'],
@@ -23,7 +24,7 @@ var DEFAULT_FEEDS=[
 var state={
   token:'', persist:false, verified:false, page:'home',
   runs:[], range:'7', runningRun:null,
-  email:'', title:DEFAULT_TITLE, feeds:[], schedule:null
+  email:'', title:DEFAULT_TITLE, feeds:[], schedule:null, workflowState:'unknown'
 };
 /* schedule 块：开启态 / 暂停态（cron 行整体注释，保留表达式） */
 var RE_ON=/^  schedule:[^\n]*\n(?:    - cron:[^\n]*\n?)+/m;
@@ -257,6 +258,16 @@ async function toggleAuto(){
       ? '已暂停 ✓ 定时触发已停止，不会再自动推送；手动推送不受影响，可随时恢复。'
       : '已恢复 ✓ 自动推送已开启，仍按 '+scheduleText(state.schedule,true)+'（北京时间）触发。','ok');
     toast(pause?'已暂停自动推送':'已恢复自动推送',pause?'warn':'ok');
+    if(!pause){
+      try{
+        var reEnabled=await ensureWorkflowEnabled();
+        if(reEnabled){
+          setMsg('auto-msg','已恢复 ✓ 并重新启用了被 GitHub 停用的定时任务（public 仓库 60 天无提交会自动禁用）。','ok');
+        }
+      }catch(e){
+        setMsg('auto-msg','已恢复 ✓ 但检查 GitHub 定时任务状态失败：'+e.message,'warn');
+      }
+    }
   }catch(e){
     setMsg('auto-msg','操作失败：'+e.message+'。'+permHint(),'bad');
     toast('自动推送状态修改失败','bad');
@@ -291,6 +302,57 @@ async function saveSchedule(){
   }catch(e){
     setMsg('sched-msg','保存失败：'+e.message+'。'+permHint(),'bad');
     toast('推送时间保存失败','bad');
+  }
+  unbusy(btn);
+}
+
+/* ========== 60 天自动禁用防护 ========== */
+function renderWorkflowState(){
+  var bad=/^disabled/.test(state.workflowState||'');
+  var w=$('workflow-state-warn');
+  if(w){
+    w.classList.toggle('show',bad);
+    var t=$('workflow-state-text');
+    if(t){
+      t.textContent=bad
+        ? 'GitHub 已停用该定时任务（'+state.workflowState+'）：public 仓库连续 60 天无提交会自动禁用定时触发器。点右侧按钮重新启用，手动推送不受影响。'
+        : '';
+    }
+  }
+  var btn=$('btn-enable-workflow');
+  if(btn){ btn.style.display=bad?'inline-block':'none'; }
+  var hw=$('home-workflow-warn');
+  if(hw){ hw.classList.toggle('show',bad); }
+}
+async function loadWorkflowState(){
+  var d=await api(WF_API);
+  state.workflowState=d.state||'unknown';
+  renderWorkflowState();
+  return state.workflowState;
+}
+async function ensureWorkflowEnabled(){
+  var d=await api(WF_API);
+  if(d.state!=='active'){
+    await api(WF_API+'/enable',{method:'PUT'});
+    state.workflowState='active';
+    renderWorkflowState();
+    return true;
+  }
+  state.workflowState='active';
+  renderWorkflowState();
+  return false;
+}
+async function enableWorkflow(){
+  if(!state.verified){ setMsg('workflow-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
+  var btn=$('btn-enable-workflow'); busy(btn,'启用中…');
+  try{
+    await api(WF_API+'/enable',{method:'PUT'});
+    await loadWorkflowState();
+    setMsg('workflow-msg','已重新启用 ✓ 定时推送恢复；保留 keepalive 工作流可避免再次被自动禁用。','ok');
+    toast('定时任务已重新启用','ok');
+  }catch(e){
+    setMsg('workflow-msg','启用失败：'+e.message+'（需要 PAT 具备 Actions 写权限）','bad');
+    toast('启用失败','bad');
   }
   unbusy(btn);
 }
@@ -533,6 +595,7 @@ function setAuthenticated(ok){
     if($('auto-line')){ $('auto-line').textContent='自动推送：未验证令牌'; }
     if($('feed-status')){ $('feed-status').textContent='验证令牌后可读取与保存自定义源（已载入默认源）'; }
     renderFeeds(DEFAULT_FEEDS,false);
+    state.workflowState='unknown'; renderWorkflowState();
   }
   if(state.page==='home'){ renderRuns(); }
   else if($('hero-status')){ $('hero-status').textContent=ok?'配置已加载':'未验证令牌'; }
@@ -541,6 +604,7 @@ async function refreshAll(){
   var jobs=[];
   if(state.page==='home'){
     jobs.push(loadRuns().catch(function(e){ setMsg('auth-msg','运行记录加载失败：'+e.message,'bad'); }));
+    jobs.push(loadWorkflowState().catch(function(){}));
     jobs.push(loadTitle().catch(function(e){ if($('chip-title')) $('chip-title').textContent='书名：读取失败'; }));
     jobs.push(loadSchedule().catch(function(e){
       if($('sched-cur')) $('sched-cur').textContent='当前定时：读取失败（'+e.message+'）';
@@ -549,6 +613,7 @@ async function refreshAll(){
     }));
   }else{
     jobs.push(loadRuns().catch(function(){}));
+    jobs.push(loadWorkflowState().catch(function(){}));
     jobs.push(loadEmail().catch(function(e){ if($('cur-email')) $('cur-email').textContent='当前邮箱：读取失败（'+e.message+'）'; }));
     jobs.push(loadTitle().catch(function(e){ if($('cur-title')) $('cur-title').textContent='当前书名：读取失败（'+e.message+'）'; }));
     jobs.push(loadSchedule().catch(function(e){
@@ -720,6 +785,7 @@ async function initSettings(){
   registerCollapsible('sec-auth',{openText:'收起',closedText:'管理'});
   bindTokenEvents();
   if($('btn-auto')){ $('btn-auto').addEventListener('click',toggleAuto); }
+  if($('btn-enable-workflow')){ $('btn-enable-workflow').addEventListener('click',enableWorkflow); }
   if($('save-email')){
     $('save-email').addEventListener('click',async function(){
       if(!state.verified){ setMsg('email-msg','请先在上方「1 · 访问令牌」保存并验证令牌','bad'); return; }
@@ -759,6 +825,7 @@ return {
   initHome:initHome, initSettings:initSettings, state:state,
   _test:{parseScheduleState:parseScheduleState,toggleScheduleBlock:toggleScheduleBlock,
     parseCron:parseCron,buildCron:buildCron,renderSchedule:renderSchedule,
-    renderRuns:renderRuns,setAuthenticated:setAuthenticated,loadSchedule:loadSchedule}
+    renderRuns:renderRuns,setAuthenticated:setAuthenticated,loadSchedule:loadSchedule,
+    renderWorkflowState:renderWorkflowState,loadWorkflowState:loadWorkflowState}
 };
 })();

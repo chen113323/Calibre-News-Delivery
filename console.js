@@ -80,7 +80,7 @@ async function api(path,opts,allow404){
   opts=opts||{};
   var headers=Object.assign({'Accept':'application/vnd.github+json'},opts.headers||{});
   if(state.token){ headers['Authorization']='Bearer '+state.token; }
-  var r=await fetch('https://api.github.com'+path,Object.assign({},opts,{headers:headers}));
+  var r=await fetch('https://api.github.com'+path,Object.assign({},opts,{headers:headers,cache:'no-store'}));
   if(r.status===401) throw new Error('令牌无效或已过期');
   if(r.status===404){
     if(allow404) return null;
@@ -421,6 +421,7 @@ function updateHero(){
   if(!latest){ st.textContent=state.schedule&&state.schedule.paused?'自动推送已暂停 · 暂无运行记录':'暂无运行记录'; return; }
   if(latest.status==='in_progress'){ dot.className='dot run'; st.textContent='正在推送…'; }
   else if(latest.conclusion==='success'){ if(!state.schedule||!state.schedule.paused) dot.className='dot ok'; st.textContent='最近推送成功 · '+fmtTime(latest.created_at); }
+  else if(latest.conclusion==='cancelled'){ dot.className='dot'; st.textContent='最近一次已取消 · '+fmtTime(latest.created_at); }
   else if(latest.conclusion){ if(!state.schedule||!state.schedule.paused) dot.className='dot bad'; st.textContent='最近推送'+(latest.conclusion==='failure'?'失败':'异常')+' · '+fmtTime(latest.created_at); }
 }
 function renderStopbar(){

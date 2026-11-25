@@ -1,0 +1,34 @@
+name: Keepalive
+run-name: 'Keepalive: keep scheduled workflows active'
+
+# GitHub 会在 public 仓库「60 天无仓库活动」时自动禁用所有 scheduled workflows，
+# 而定时运行本身不算活动。本工作流每约 15 天产生一次真实提交，持续重置该计时，
+# 从而保护 calibre-news.yml 的每日推送任务。它独立于业务工作流，
+# 即使业务侧的自动推送被暂停（schedule 被注释）也照常运行。
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 4 1,15 * *'   # 每月 1/15 日 UTC 04:17（约每 15 天），避开整点高峰
+
+permissions:
+  contents: write
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: 写入心跳时间戳并提交
+        run: |
+          mkdir -p .github
+          date -u +'%Y-%m-%dT%H:%M:%SZ' > .github/keepalive.txt
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/keepalive.txt
+          if git diff --staged --quiet; then
+            echo 'timestamp unchanged, nothing to commit'
+          else
+            git commit -m 'chore(keepalive): 保持仓库活动，避免 60 天自动禁用定时任务 [skip ci]'
+            git push
+          fi

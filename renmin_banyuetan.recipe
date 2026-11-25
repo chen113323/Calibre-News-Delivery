@@ -8,8 +8,26 @@
 
 import json
 import os
+import re
 
 from calibre.web.feeds.news import BasicNewsRecipe
+
+# workflow 会用 EPUB 的 Title 元数据拼接成品文件名，因此自定义书名必须
+# 先净化：路径分隔符、Windows 保留字符、控制字符与路径穿越片段都会让
+# 生成/发送步骤失败（或直接写出 output 目录）。此处是最后一道兜底，
+# 即使绕过网页控制台直接写仓库变量也不会触发断更。
+_UNSAFE_TITLE = re.compile(r'[\\/:*?"<>|\x00-\x1f\x7f]')
+
+
+def safe_title(title, fallback=u'人民日报与半月谈'):
+    """返回可安全用作文件名的书名；为空时回退默认书名。"""
+    t = (title or u'').strip()
+    t = _UNSAFE_TITLE.sub(u'_', t)
+    while t.startswith(u'.'):
+        t = t[1:]
+    t = t.strip().strip(u'.')
+    t = re.sub(r'\s+', u' ', t)
+    return t[:80] if t else fallback
 
 DEFAULT_FEEDS = [
     (u'人民日报电子版', 'https://rsshub.ktachibana.party/people/paper'),
@@ -62,7 +80,7 @@ class RenminBanyuetan(BasicNewsRecipe):
         # 书名自定义：网页控制台维护 vars.BOOK_TITLE → workflow 注入环境变量；未设置则用默认
         t = os.environ.get('BOOK_TITLE') or os.environ.get('book_title') or ''
         if t.strip():
-            self.title = t.strip()
+            self.title = safe_title(t)
 
     def get_feeds(self):
         """动态 feed 列表：优先网页控制台配置的自定义源（vars.FEEDS），回退默认。"""

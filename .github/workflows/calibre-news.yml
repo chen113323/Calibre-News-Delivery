@@ -31,6 +31,7 @@ jobs:
       from: ${{ secrets.FROM }}
       to: ${{ github.event.inputs.to_email || vars.TO || secrets.TO }}
       FEEDS_CONFIG: ${{ vars.FEEDS }}
+      BOOK_TITLE: ${{ vars.BOOK_TITLE }}
       ext: ${{ secrets.FORMAT || 'epub' }}
       size: ${{ secrets.SIZE || 25 }}
     steps:

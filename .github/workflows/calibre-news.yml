@@ -8,8 +8,8 @@ on:
         description: '临时收件邮箱（留空则使用已配置邮箱）'
         required: false
         type: string
-  # schedule:
-  #   - cron: '30 23 * * *'   # UTC 23:30 = 北京 07:30（每天）
+  schedule:
+    - cron: '30 23 * * *'   # UTC 23:30 = 北京 07:30（每天）
   # push:
   #   branches: ['master']
 

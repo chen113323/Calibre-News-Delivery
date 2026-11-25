@@ -7,6 +7,9 @@ var OWNER='chen113323', REPO='Calibre-News-Delivery', WF='calibre-news.yml', BR=
 var TK_KEY='wml_console_token';
 var WEEK=['日','一','二','三','四','五','六'];
 var RANGES={'1':'最近 24 小时','3':'最近 3 天','7':'最近 7 天','30':'最近 30 天','0':'全部记录'};
+var REPO_API='/repos/'+OWNER+'/'+REPO;
+var RUNS_ALL=REPO_API+'/actions/workflows/'+WF+'/runs?per_page=100';
+var RUNS_ONE=REPO_API+'/actions/workflows/'+WF+'/runs?per_page=1';
 var DEFAULT_TITLE='人民日报与半月谈';
 var DEFAULT_FEEDS=[
  ['人民日报电子版','https://rsshub.ktachibana.party/people/paper'],
@@ -88,11 +91,12 @@ async function api(path,opts,allow404){
   return r.status===204?null:r.json();
 }
 function getVar(name){ return api('/repos/'+OWNER+'/'+REPO+'/actions/variables/'+name,{},true); }
-function putVar(name,value){
-  return api('/repos/'+OWNER+'/'+REPO+'/actions/variables/'+name,{
-    method:'PUT',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({name:name,value:value})
-  });
+async function putVar(name,value){
+  var exist=await api(REPO_API+'/actions/variables/'+name,{},true);
+  var path=exist?(REPO_API+'/actions/variables/'+name):(REPO_API+'/actions/variables');
+  var method=exist?'PATCH':'POST';
+  return api(path,{method:method,headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({name:name,value:value})});
 }
 function delVar(name){ return api('/repos/'+OWNER+'/'+REPO+'/actions/variables/'+name,{method:'DELETE'},true); }
 async function getWorkflow(){
@@ -405,7 +409,7 @@ function renderRuns(){
 }
 async function loadRuns(){
   if(!state.verified){ renderRuns(); return; }
-  var data=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs?per_page=100');
+  var data=await api(RUNS_ALL);
   state.runs=data.workflow_runs||[];
   renderRuns();
 }
@@ -453,7 +457,7 @@ function pollNewRun(start){
   var timer=setInterval(async function(){
     n++;
     try{
-      var data=await api('/repos/'+OWNER+'/'+REPO+'/actions/runs?per_page=1');
+      var data=await api(RUNS_ONE);
       var r=(data.workflow_runs||[])[0];
       if(r&&new Date(r.created_at).getTime()>start-60000){
         setMsg('dispatch-msg','运行 '+r.id+' · '+(r.conclusion||(r.status==='in_progress'?'运行中':'排队中')),'ok');

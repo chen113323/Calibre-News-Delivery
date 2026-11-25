@@ -27,6 +27,7 @@ jobs:
       secret: ${{ secrets.SECRET }}
       from: ${{ secrets.FROM }}
       ALERT_TO: ${{ vars.ALERT_TO }}
+      ALERT_ENABLED: '1'
       ALERT_SUBJECT: ${{ github.event.inputs.subject }}
       ALERT_BODY: '这是一封测试告警邮件。收到即表示告警通道（SMTP 与收件人）配置正确；业务推送失败时会自动发送同样的告警。'
     steps:
@@ -44,6 +45,9 @@ jobs:
           port = int(e('port') or e('PORT') or 465)
           user = e('from') or e('FROM')
           pwd = e('secret') or e('SECRET')
+          if e('ALERT_ENABLED', '1') == '0':
+              print('邮件告警已关闭（ALERT_ENABLED=0），跳过')
+              sys.exit(0)
           enc = (e('encrypt') or e('ENCRYPT') or 'SSL').upper()
           to = e('ALERT_TO') or user
           if not all([host, user, pwd, to]):

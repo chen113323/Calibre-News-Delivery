@@ -1,0 +1,55 @@
+/* 推送小信使 · 零外部资源的互动桌宠（pet.js 配套） */
+.wml-pet{position:fixed;left:24px;bottom:22px;width:88px;height:88px;z-index:40;
+  cursor:grab;user-select:none;touch-action:none;transition:opacity .25s}
+.wml-pet.dragging{cursor:grabbing}
+.wml-pet.hidden{display:none}
+.wml-pet svg{width:100%;height:100%;display:block;overflow:visible;
+  transform:scaleX(var(--pet-dir,1));transition:transform .2s}
+.wml-pet .pet-body{animation:petBreathe 2.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center bottom}
+@keyframes petBreathe{50%{transform:translateY(-3px)}}
+.wml-pet.walking .pet-body{animation:petWalk .48s ease-in-out infinite}
+@keyframes petWalk{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+.wml-pet.waving .pet-arm{animation:petWave .32s ease-in-out 3;transform-box:fill-box;transform-origin:center bottom}
+@keyframes petWave{0%,100%{transform:rotate(0)}50%{transform:rotate(-28deg)}}
+.wml-pet.blinking .eyes-open{transform:scaleY(.12);transform-box:fill-box;transform-origin:center}
+.wml-pet .eyes-happy,.wml-pet .mouth-sad,.wml-pet .mouth-o,.wml-pet .mouth-flat{display:none}
+.wml-pet.mood-happy .eyes-open,.wml-pet.mood-sad .mouth-smile,
+.wml-pet.mood-working .mouth-smile,.wml-pet.mood-sleep .eyes-open{display:none}
+.wml-pet.mood-happy .eyes-happy,.wml-pet.mood-sad .mouth-sad,
+.wml-pet.mood-working .mouth-o,.wml-pet.mood-sleep .eyes-happy,
+.wml-pet.mood-sleep .mouth-flat{display:inline}
+.wml-pet.mood-sleep .mouth-smile{display:none}
+.wml-pet.mood-sleep .pet-body{animation-duration:5s;opacity:.88}
+.wml-pet .pet-shadow{transition:transform .2s,opacity .2s;transform-box:fill-box;transform-origin:center}
+.wml-pet.flying .pet-shadow{transform:scale(.6);opacity:.45}
+
+.pet-bubble{position:absolute;left:0;bottom:100%;margin-bottom:10px;min-width:120px;max-width:230px;
+  width:max-content;background:var(--card);color:var(--text);border:1px solid var(--line);
+  border-radius:12px;padding:8px 12px;font-size:12.5px;line-height:1.55;
+  box-shadow:var(--shadow-h);opacity:0;transform:translateY(7px) scale(.96);
+  transition:opacity .22s,transform .22s;pointer-events:none;z-index:41}
+.pet-bubble.show{opacity:1;transform:translateY(0) scale(1)}
+
+.pet-tools{position:fixed;left:20px;bottom:2px;z-index:40;display:flex;gap:6px}
+.pet-tools.hidden{display:none}
+.pet-tools button{font-size:11px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);
+  background:var(--card);color:var(--text2);cursor:pointer;line-height:1.6}
+.pet-tools button:hover{color:var(--primary);border-color:var(--primary)}
+.pet-tools button.off{opacity:.6}
+.pet-recall{position:fixed;left:18px;bottom:18px;z-index:40;width:36px;height:36px;
+  border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--text2);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.pet-recall:hover{color:var(--primary);border-color:var(--primary)}
+.pet-recall[hidden]{display:none!important}
+.pet-recall svg{width:19px;height:19px}
+
+@media(max-width:899px){
+  .wml-pet{width:64px;height:64px;left:12px;bottom:16px;opacity:.94}
+  .pet-bubble{max-width:180px;font-size:12px;padding:6px 10px}
+  .pet-tools{left:10px;bottom:0}
+}
+@media(prefers-reduced-motion:reduce){
+  .wml-pet .pet-body,.wml-pet.walking .pet-body,.wml-pet.waving .pet-arm{animation:none!important}
+  .wml-pet.blinking .eyes-open{transform:none}
+  .wml-pet svg{transition:none}
+}

@@ -9,14 +9,16 @@ run-name: 'Keepalive: 仓库活动心跳'
 #     控制台的「暂停/恢复自动推送」只注释 calibre-news.yml 的 schedule 块，
 #     与本工作流没有任何交互，暂停期间本工作流照常运行。
 #  2. 零文件增长：git commit --allow-empty 不含任何文件变更，不产生新的 blob/tree，
-#     工作树永远不变；每次只新增一个约 200 字节的 commit 对象（一年约 12~24 次）。
-#  3. 随机 15~30 天：GitHub cron 是静态表达式，无法表达真随机，因此改为
-#     「每天一次轻量检查 + 确定性伪随机阈值」：阈值由上次心跳时间戳哈希得到，
-#     落在 15~30 天。未到期的检查直接退出，不提交、不改文件、不触发 Pages 构建。
-#  4. 手动触发默认只做检查（dry-run），传 force=true 才真正提交，避免测试污染仓库。
+#     工作树永远不变；每次只新增一个约 200 字节的 commit 对象（一年约 24 次）。
+#  3. 固定每 15 天、零随机：GitHub cron 是静态表达式，无法精确表达「每 15 天」
+#     （1/16 日的实际间隔是 13~16 天；*/15 会出现 31 日→次月 1 日仅隔 1 天，故不用）。
+#     节奏完全由 cron 决定，脚本内不再有任何哈希、伪随机或浮动阈值。
+#  4. 幂等保护：仅当「距上次心跳不足 10 天」时跳过，防止 GitHub 把积压的
+#     延迟 tick 一次性释放造成重复提交；不影响每 15 天的正常节奏。
+#  5. 手动触发默认只做检查（dry-run），传 force=true 才真正提交，避免测试污染仓库。
 on:
   schedule:
-    - cron: '54 0 * * *'   # 临时实验：3 分钟后触发，用于测量 schedule 注册延迟；观察后改回 15 天策略
+    - cron: '10 4 1,16 * *'   # 每月 1 / 16 日 UTC 04:10 = 北京 12:10，非整点避高峰
   workflow_dispatch:
     inputs:
       force:
@@ -46,6 +48,8 @@ jobs:
         run: |
           set -euo pipefail
           MARK='chore(keepalive): heartbeat'
+          # 防重复下限：仅用于拦截同周期内的重复/补跑 tick，不是执行间隔
+          MIN_GAP_DAYS=10
 
           # 手动触发且未指定 force：只打印检查结果，不产生任何提交
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.force }}" != "true" ]; then
@@ -64,16 +68,13 @@ jobs:
           last_epoch=$(date -u -d "$last" +%s)
           now=$(date -u +%s)
           elapsed=$(( (now - last_epoch) / 86400 ))
-
-          # 用上次心跳的时间戳做种子，得到 15~30 之间的确定性伪随机阈值
-          seed=$(printf '%s' "$last" | sha256sum | cut -c1-8)
-          target=$(( 15 + (16#$seed % 16) ))
           echo "上次心跳: $last"
-          echo "已过天数: $elapsed | 本次阈值: $target 天（seed=$seed）"
+          echo "已过天数: $elapsed | 防重复下限: $MIN_GAP_DAYS 天 | 执行间隔由 cron 决定（每 15 天）"
 
-          if [ "$elapsed" -ge "$target" ]; then
+          if [ "$elapsed" -ge "$MIN_GAP_DAYS" ]; then
             echo 'due=true' >> "$GITHUB_OUTPUT"
           else
+            echo '距上次心跳过近，跳过以避免重复提交'
             echo 'due=false' >> "$GITHUB_OUTPUT"
           fi
 
@@ -86,5 +87,14 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           # --allow-empty：不新增/修改/删除任何文件，只产生一个 commit 对象
           git commit --allow-empty -m 'chore(keepalive): heartbeat [skip ci]'
-          # push 偶发冲突时直接失败即可：下一次每日检查会自动重试（阈值已满足）
-          git push
+          # push 偶发冲突时重试；15 天一次的节奏下不能把重试留给下一次触发
+          for i in 1 2 3; do
+            if git push; then
+              echo "心跳已推送（第 $i 次尝试）"
+              exit 0
+            fi
+            echo "push 失败，等待 5 秒后重试（$i/3）"
+            sleep 5
+          done
+          echo '::error::git push 连续 3 次失败，心跳未落地'
+          exit 1

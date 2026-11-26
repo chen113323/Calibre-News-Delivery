@@ -9,7 +9,7 @@ on:
         required: false
         type: string
   schedule:
-    - cron: '30 23 * * *'   # UTC 23:30 = 北京 07:30，避开整点高峰防跳过
+    - cron: '30 16 * * *'   # UTC 16:30 = 北京 00:30（每天）
   # push:
   #   branches: ['master']
 

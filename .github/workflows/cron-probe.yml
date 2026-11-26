@@ -7,7 +7,7 @@ run-name: 'Cron Probe: 定时触发验证'
 # 验证完成后可直接删除本文件（或由控制台停用），不影响任何业务链路。
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '* 08 * * * *'
   workflow_dispatch:
 
 permissions:
